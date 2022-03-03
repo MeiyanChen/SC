@@ -167,16 +167,202 @@ SynthDef.new(\playbuf_test, {
 
 Synth.new(\playbuf_test,[\buf, ~b0.bufnum, \rate, 0.5]); //改变声音播放速度 大于1加速，小于1放慢
 
-//16:29
+//-----------
 
 
 
 
+~b0_96 = Buffer.read(s,"/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/Buffersound/1_kidlaugh_96k.wav" );
+
+~b0_96.query;
+Synth.new(\playbuf_test,[\buf, ~b0_96.bufnum, \rate, 1.5]); // pitche and time shift
+
+
+// browse -> UGens -> buffer -> info
+(
+SynthDef.new(\playbuf_test, {
+	arg amp = 1, out = 0, buf, rate = 1, da = 2;
+	var sig;
+	sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf)*rate, doneAction:da); // 让音频按原速（样本率）播放
+	sig = sig* amp;
+	Out.ar(out, sig);
+}).add;
+)
+
+Synth.new(\playbuf_test,[\buf, ~b0.bufnum, \rate, 1.5]);
+
+
+
+//-----------// triger and startpos allows to specify a starting frame and give the option of jumping to that frame by sending a trigger
+
+(
+SynthDef.new(\playbuf_test, {
+	arg amp = 1, out = 0, buf, rate = 1,t_trig= 1, start=0, da = 2;
+	var sig;
+	sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf)*rate, t_trig, start, doneAction:da);
+	sig = sig* amp;
+	Out.ar(out, sig);
+}).add;
+)
+
+x = Synth.new(\playbuf_test,[\buf, ~b0.bufnum, \start, s.sampleRate/2, \da, 0]); // half second after begining, and won't free itself until its gets end
+x.set(\t_trig, 1); // jump to start position
+x.free;
+
+//------------
+
+(
+SynthDef.new(\playbuf_test, {
+	arg amp = 1, out = 0, buf, rate = 1,t_trig= 1, start=0, loop = 0, da = 2; //loop 为1，音频会重复， 为0时，则只播放一次
+	var sig;
+	sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf)*rate, t_trig, start, doneAction:da);
+	sig = sig* amp;
+	Out.ar(out, sig);
+}).add;
+)
+
+x = Synth.new(\playbuf_test,[\buf, ~b3_part1.bufnum, \loop, 1]);
+x.set(\loop, 0); //可以在播放时，改变参数
+x.free;
+
+
+Synth.new(\playbuf_test,[\buf, ~b0.bufnum, \rate, -1, \start, ~b0.numFrames - 2]); //反向播放， start at last frame, frame indices start with 0, starting at the last frame of buffer which play buffs queue to check its doneAction and that happens to be two. so when we instantiate the synth, it actually frees itself immediately. We can correct this by specifying the start position to be one frame earlier
+
+12.midiratio; // converts a transposition in semitones into an equal tempered ratio, 往上8度
+-12.midiratio;
+7.midiratio; //5度
+
+Synth.new(\playbuf_test,[\buf, ~bells[0].bufnum, \rate, -7.midiratio]); // 按半音改变音高
+Synth.new(\playbuf_test,[\buf, ~bells[0].bufnum, \rate, -10.midiratio]);
+Synth.new(\playbuf_test,[\buf, ~bells[0].bufnum, \rate, -13.midiratio]);
+Synth.new(\playbuf_test,[\buf, ~bells[0].bufnum, \rate, -15.midiratio]);
+
+
+//------------------------- 按组播放和调整音频
+
+g = Group.new;
+
+(
+x = Synth.new(\playbuf_test,[\buf, ~b0.bufnum, \rate, 1.5, \loop, 1, \amp, 0.5, g]);
+y = Synth.new(\playbuf_test,[\buf, ~b1.bufnum, \rate, 1.2, \loop, 1, \amp, 0.5, g]);
+z = Synth.new(\playbuf_test,[\buf, ~b2.bufnum, \rate, 2.1, \loop, 1, \amp, 0.5, g]);
+)
+
+g.set(\rate, 0.5);
+
+g.set(\buf, ~b3_part1.bufnum);
+
+x.set(\rate, exprand(0.2,2,0));
+y.set(\rate, exprand(0.2,2,0));
+z.set(\rate, exprand(0.2,2,0));
+
+g.set(\loop, 0); //停止循环
+g.free;
 
 
 
 
+//BufRd------------------------------
 
+(
+SynthDef.new(\bufrd_test,{
+arg amp = 1, out = 0, buf;
+var sig, ptr;
+ptr = Line.ar(0, BufFrames.kr(buf)-1, BufDur.kr(buf), doneAction:2); //按原音频播放
+sig = BufRd.ar(2, buf, ptr);
+sig = sig* amp;
+Out.ar(out, sig);
+}).add;
+)
+
+Synth.new(\bufrd_test,[\buf, ~b2.bufnum]);
+
+
+
+
+(
+SynthDef.new(\bufrd_test,{
+arg amp = 1, out = 0, buf, start, end;
+var sig, ptr;
+ptr = Line.ar(start, end, BufDur.kr(buf), doneAction:2); // line 不能循环播放
+sig = BufRd.ar(2, buf, ptr);
+sig = sig* amp;
+Out.ar(out, sig);
+}).add;
+)
+
+Synth.new(\bufrd_test,[\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1 ]);
+Synth.new(\bufrd_test,[\buf, ~b2.bufnum, \start,~b2.numFrames-1,\end, 0]); //反向播放
+
+//--------
+
+(
+SynthDef.new(\bufrd_loop,{
+arg amp = 1, out = 0, buf, start, end;
+var sig, ptr;
+	ptr = Phaser.ar(0, BufRateScale.kr(buf)*rate, start, end);  // 可循环播放
+sig = BufRd.ar(2, buf, ptr);
+sig = sig* amp;
+Out.ar(out, sig);
+}).add;
+)
+
+Synth.new(\bufrd_loop,[\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1 ]);
+
+x.set(\start, ~b2.numFrames/2, \end, ~b2.numFrames-1); //only read the second half of the file
+x.set(\start, 2000, \end, ~b2.26000);
+x.set(\rate, -3.midiratio);
+x.free;
+
+// 可尝试用sweep或 lFSaw
+
+//---------------- 或其他ugens
+(
+SynthDef.new(\bufrd_sine,{
+arg amp = 1, out = 0, buf, start, end, freq = 1;
+var sig, ptr;
+ptr = SinOsc.ar(freq, 3pi/2).range(start, end); //sine wave start at its lowest point
+sig = BufRd.ar(2, buf, ptr);
+sig = sig* amp;
+Out.ar(out, sig);
+}).add;
+)
+
+3pi/2;
+
+x = Synth.new(\bufrd_sine,[\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1, \freq, 0.2 ]);
+
+x.free;
+
+//---------------------
+
+(
+SynthDef.new(\bufrd_noise,{
+arg amp = 1, out = 0, buf, start, end, freq = 1;
+var sig, ptr;
+ptr = LFDNoise1.ar(freq).range(start, end);
+sig = BufRd.ar(2, buf, ptr);
+sig = sig* amp;
+Out.ar(out, sig);
+}).add;
+)
+
+
+Synth.new(\bufrd_noise,[\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1, \freq, 1]);
+
+
+w= Synth.new(\bufrd_noise,[\buf, ~b0.bufnum, \start, 0, \end, ~b0.numFrames-1, \freq, 0.6, \amp. 0.5]);
+x= Synth.new(\bufrd_noise,[\buf, ~b1.bufnum, \start, 0, \end, ~b1.numFrames-1, \freq, 0.8, \amp. 0.5]);
+y= Synth.new(\bufrd_noise,[\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1, \freq, 0.7, \amp. 0.5]);
+z= Synth.new(\bufrd_noise,[\buf, ~b3.bufnum, \start, 0, \end, ~b3.numFrames-1, \freq, 0.5, \amp. 0.2]);
+
+s.freeAll;
+
+g.set(\freq, 200);
+
+
+//RecordBuf
+//BufWr
 
 
 
