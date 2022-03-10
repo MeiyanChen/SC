@@ -79,14 +79,14 @@ SynthDef.new(\tone,{
 	    arg freq = 440, amp = 0.3, gate = 0;
 		var sig, env;
 		sig = LFTri.ar(freq)!2;
-		env = EnvGen.kr(Env.adsr, gate, doneAction:2); //adsr 延时声音， gate为0，释放声音； 为1，触发声音
+		env = EnvGen.kr(Env.adsr, gate, doneAction:2); //adsr 延时声音， gate关闭包络； 为1，打开包络
 	  	sig = sig * env *amp;
 	    Out.ar(0, sig);
-});
+}).add;
 )
 
-x = Synth.new(\tone, [\gate, 1]); //每个按键 声音将一直保持
-x.set(\gate, 0);
+//x = Synth.new(\tone, [\gate, 1]); //每个按键 声音将一直保持
+//x.set(\gate, 0);
 
 
 ~notes = Array.newClear(128);  // 128个可能的按键，
@@ -108,10 +108,10 @@ MIDIdef.noteOn(\noteOnTest, {
 )
 
 (
-MIDIdef.noteOff(\noteOnTest, {   //收键
+MIDIdef.noteOff(\noteoffTest, {   //收键
 	arg vel, nn;
 	[vel, nn].postln;
-	~notes[nn].set(\gate, 0); //每一个声音出现一次，就释放一次
+	~notes[nn].set(\gate, 0); //每一个声音出现一次，就包络
 	~notes[nn] = nil; //然后以nil代替声音
 });
 )
@@ -120,6 +120,20 @@ MIDIdef.noteOff(\noteOnTest, {   //收键
 //-----------pitch bend
 //The MIDI protocol specifies that a pitchbend value of 8192 (MSB of 64 and LSB of 0) means no bend. Thus, on the scale from 0 to 16,383, a value of 0 means maximum downward bend, 8,192 means no bend, and 16,383 means maximum upward bend. Almost all pitchbend wheels on MIDI controllers use a spring mechanism that has the dual function of a) providing tactile resistance feedback as one moves the wheel away from its centered position and b) snapping the wheel quickly back to its centered position when it’s not being manipulated.
 //  https://en.wikipedia.org/wiki/Pitch_wheel
+
+(
+SynthDef.new(\tone,{
+	    arg freq = 440, amp = 0.3, gate = 0, bend = 0;
+		var sig, env;
+		sig = LFTri.ar(freq * bend.midiratio)!2; // 半音转化为频率
+		env = EnvGen.kr(Env.adsr, gate, doneAction:2);
+	  	sig = sig * env *amp;
+	    Out.ar(0, sig);
+}).add;
+)
+
+12.midiratio;
+
 (
 MIDIdef.bend(\bendTest, {
 	arg val, chan, src;
@@ -133,16 +147,7 @@ MIDIdef.bend(\bendTest, {
 
 nil.set(\freq, 880); // nil understands the set message， und responds to it by doing nothing
 
-(
-SynthDef.new(\tone,{
-	    arg freq = 440, amp = 0.3, gate = 0, bend = 0;
-		var sig, env;
-		sig = LFTri.ar(freq * bend.midiratio)!2; // 半音转化为频率
-		env = EnvGen.kr(Env.adsr, gate, doneAction:2);
-	  	sig = sig * env *amp;
-	    Out.ar(0, sig);
-});
-)
+
 
 
 (
