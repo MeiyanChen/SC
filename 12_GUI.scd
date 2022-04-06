@@ -219,7 +219,7 @@ w = Window.new("gui", Rect.new(750, 50, 500, 200))
 .action_({
 	arg obj;
 	var cf;
-	cf = obj.value.linexp(0, 1, 100, 4000).postln;  //设置频率范围    ControlSpec
+	cf = obj.value.linexp(0, 1, 100, 4000).postln;  //设置频率范围    ControlSpec // linexp, linlin, explin
 	x.set(\freq, cf);
 });
 )
@@ -262,7 +262,7 @@ w = Window.new("gui", Rect.new(750, 50, 500, 200))
 .front
 .alwaysOnTop_(true);
 
-~slider = Slider(w, Rect(20, 20, 150, 30) )
+~slider = Slider.new(w, Rect(20, 20, 150, 30) )
 .background_(Color(0.2, 0.75, 0.95))
 .action_({
 	arg obj;
@@ -295,15 +295,20 @@ w = Window.new("gui", Rect.new(750, 50, 500, 200))
 })
 )
 
-
+//Problem:  move the slider while the button in the off position -> node not found
+// node watcher: 参考资料  register -> Node -> isPlaying ,  isRunning
 //-----
 (
 SynthDef.new(\simplebpf,{
-	arg freq = 440;
+	arg freq = 440, rq;
 	var sig;
 	sig = PinkNoise.ar(1!2);
-	sig = BPF.ar(sig, freq, 0.2);
-	//sig = BPF.ar(sig, freq.lag(0.5), 0.2);
+	sig = BPF.ar(
+		sig,
+		freq.lag(0.5),
+		rq.lag(0.5),
+		1/rq.sqrt.lag(0.5)); // quality control, when a filters bandpass narrows, the amplitude decreases and multiplying by this value whill ensure that the amplitude will remain more or less constant regardless  of filter quality
+
 	Out.ar(0, sig);
 }).add;
 )
@@ -320,11 +325,45 @@ w = Window.new("gui", Rect.new(750, 50, 500, 200))
 	arg obj;
 	var cf;
 	cf = obj.value.linexp(0, 1, 100, 4000).postln;
-	x.set(\freq, cf);
+	if(
+		x.isPlaying,           // 1.  make sure that the synth exists before attempting to update its parameters
+		{x.set(\freq, cf)}
+	);
+	~numberBox.value_(obj.value.linexp(0, 1, 100, 4000)); // update the value of the number box, making sure to rescale the values corectly  ->contoling cound
+});
+
+~numberBox = NumberBox(w, Rect(180, 20, 80, 30)) // 3. one GUI object affect one or more other GUI onjects, control frequency
+.value_(100)
+.clipLo_(100)
+.clipHi_(4000)
+.font_(Font("Monaco", 16))
+.decimals_(2)
+.action_({
+	arg obj;
+	~slider.valueAction_(obj.value.explin(100, 4000, 0.1)) // evaluates action, if the value has changed
+});
+
+~freqLabel = StaticText(w, Rect(180, 50, 80, 20)) // 4.文字
+.string_("freq")
+.font_(Font("Monaco", 14))
+.align_(\center)
+.background_(Color.white)
+.stringColor_(Color.red);
+
+~knob = Knob(w, Rect(270, 20, 30, 30))      // 2. control the quality of the filter
+.action_({
+	arg obj;
+	var qual;
+	qual = obj.value.linexp(0, 1, 1, 100).reciprocal;
+	if(
+		x.isPlaying,
+		{x.set(\rq, qual)}
+	);
 });
 
 
-~button = Button(w, Rect(430, 20, 50, 30))       //~button.value_(0);
+
+~button = Button(w, Rect(350, 20, 50, 30))       //~button.value_(0);
 .states_([
 	["OFF", Color.black, Color.gray(0.8)],
 	["ON", Color.white, Color(0.2, 0.75, 0.95)]
@@ -333,36 +372,121 @@ w = Window.new("gui", Rect.new(750, 50, 500, 200))
 .action_({
 	arg obj;
 	if(
-		obj.value == 1,
+		obj.value == 1, //打开开关
 		{
 			x = Synth.new(
 				\simplebpf,
 				[
-					\freq, ~slider.value.linexp(0.1, 100, 4000)
+					\freq, ~slider.value.linexp(0.1, 100, 4000),
+					\rq, ~knob.value.linexp(0, 1, 1, 100).reciprocal
 				]
-			).register;
+			).register;  // registering with NodeWatcher 确保每次移动slider都有声音
 		},
 		{x.free}
 	);
 })
 )
 
+//------ Focusing 光标: mouse or tab
+// slider, cknob : C : center position, X: maximum, N: minimum, R: random value
+// arrow keys, incrementing, decrementing the object
+// alt + shift modify the arrow key or mouse behavior
+// buttion, clicking with mouse
+
+
+//其他GUI对象----------------------------------------------------------------------------
+
+(
+~obj.remove;
+~obj = PopUpMenu(w, Rect(20, 100, 120, 30))  //下拉菜单
+.items_("one", "two", "three");
+)
+
+(
+~obj.remove;
+~obj = RangeSlider(w, Rect(20, 100, 120, 30)) //双向滑动条
+)
+
+(
+~obj.remove;
+~obj = TextField(w, Rect(20, 100, 120, 30)) //单行文字输入
+)
+
+(
+~obj.remove;
+~obj = TextView(w, Rect(20, 100, 120, 100)) //多行文字输入
+)
+
+(
+~obj.remove;
+~obj = Slider2D(w, Rect(20, 100, 120, 100))
+)
+
+(
+~obj.remove;
+~obj = MultiSliderView(w, Rect(20, 100, 120, 80))
+.size_(9);
+)
+
+//SoundFileView, LevelIndicator
 
 
 
 
 
+//Decorator -> FlowLayout------------------------------------------------------
+// a decorator can be assigned to a parent view and will govern how and where child views are positioned on it
+//flowlayout puts the next object to the right of the previous one and goes to the next line when it runs out of horizontal space
+
+(
+Window.closeAll; // 避免多窗口重叠
+w = Window.new("flow", Rect.new(850, 50, 400, 400))
+.front
+.alwaysOnTop_(true);
+
+// decorator as the main view
+w.view.decorator_(FlowLayout(w.bounds, Point(15, 15), Point(7, 7)));  // rect, margin, gap (pixel)
+//w.view.decorater_(FlowLayout(w.bounds, 15@15, 7@7)); (x@y)
+)
+
+
+Knob(w, 100@100); //执行一次，建一个滑钮
+20.do{Knob(w, 40@40)}; //执行一次，创建多个
+
+
+w.view.children.collect(_.value_(rrand(0.0, 1.0))); // 设置滑钮成随机数值
+w.view.children.collect(_.remove); //消除所有对象
+
+w.view.decorator.reset;//////////
+w.view.decorator.nextLine; //换行
 
 
 
+// example
 
+(
+Window.closeAll;
+w = Window.new("nested", Rect.new(750, 50, 500, 500))
+.front
+.alwaysOnTop_(true);
 
+w.view.decorator_(FlowLayout(w.bounds, 30@30, 30@30));
 
+c = Array.fill(4, {  //设置四个compositeview
+	arg view;
+	view = CompositeView(w, 200@200)  // parent view
+	.background_(Color.rand);
 
+	view.decorator_(FlowLayout(view.bounds, 5@5, 5@5));  // subview
+});
 
+Array.fill(5, {Slider(c[0], 30@150)});  //数列1
+Array.fill(5, {Knob(c[1], 40@40)});  //数列2
+)
 
-
-
+ //可明确指定某一对象数据，或同时指定同一decorator中的多个对象
+c[0].children[2].value_(0.5);
+c[1].children.collect(_.value_(0.75));
 
 
 
