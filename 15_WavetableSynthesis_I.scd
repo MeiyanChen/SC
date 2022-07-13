@@ -231,10 +231,22 @@ b.sine3(
 
 
 //(Approach 3)---------------------------------------------------------------------
-// Using Env Class
+/*Using Env Class
+Env is a language side specification for a segmented envelop shape.
+Consider it as an abstract shape
+*/
+
+b = Buffer.alloc(s, 2048);
 
 Env([0, 0.6, -0.9, 0.3, 0], [4, 3, 2, 1], \lin).plot;
+// only have to worry about relative proportions of the durations rather than the actual values themselves
+// straight lines angles and sharp corners tending to produce a wide spectrum
+//smooth curvy continuous shapes tend to produce fewer and quieter and high harmonics
 
+// ENV -> Signal -> Wavetable format -> Buffer
+
+
+// example 1 ---------
 (
 var env, sig, wt;
 env = Env([0, 0.6, -0.9, 0.3, 0], [4, 3, 2, 1], \lin);
@@ -245,13 +257,50 @@ b.loadCollection(wt);
 
 b.plot;
 
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
+
+
+
+//example 2 -----------
+
 (
-var env, sig, wt, numSegs;
+var env, sig, wt;
+env = Env([0, 0.6, -0.9, 0.3, 0], [4, 3, 2, 1], \sine); //soften the conners using sinusoidal interpolation instead
+sig = env.asSignal(1024);
+wt = sig.asWavetable;
+b.loadCollection(wt);
+)
+
+b.plot;
+
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
+
+
+
+// example 3---------
+
+(
+var env, sig, wt;
+env = Env([0, 0.6, -0.9, 0.3, 0], [4, 3, 2, 1], {rrand(-20, 20)}!4); // an array of random numbers
+sig = env.asSignal(1024);
+wt = sig.asWavetable;
+b.loadCollection(wt);
+)
+
+b.plot;
+
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
+
+
+//example 4------------
+//randommize the whole thing
+(
+var env, sig, wt, numSegs; // number of envelopes segments
 numSegs = rrand(4, 20);
 env = Env(
-	{rrand(-1.0, 1.0)}!(numSegs + 1),
-	{exprand(1, 20)}!numSegs,
-	{rrand(-20, 20)}!numSegs
+	{rrand(-1.0, 1.0)}!(numSegs + 1), // 20 envelope points canbe anything from -1 to 1
+	{exprand(1, 20)}!numSegs, // random duration
+	{rrand(-20, 20)}!numSegs  // random curves
 );
 sig = env.asSignal(1024);
 wt = sig.asWavetable;
@@ -259,11 +308,23 @@ b.loadCollection(wt);
 sig.plot;
 )
 
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
+//one likely possible danger here that it's the envelope points will come out all positive or all negative in which case the wave shape will be entirely above or below zero and this meaning s we'd be introducing some considerable DC offset into the signal, basically pusing it away from the horizontal axis and loudspeakers don't like reproducing there kinds of signals. it's not really good or healthy for them.
+
+// getting heads 20 times in a row which is not very probable, but only for 4 times, this outcome is considerably more likely.
+//So an improvement here is to limit the range of envelope points from 0 to 1 and then multiply the resulting array by the array [1, -1]
 
 ({rrand(0.0, 1.0)}!10) *[1, -1];
-(0, 1, 2, 3, 4, 5, 6, 7, 8, 9) *[1, -1];
+// in SC this type of array multiplication is defined such that corresponding values are multiplied together and the smaller array will repeat itself as many times as necessary to interact with every value in larger array. in other words, all the numbers in the random array with even indices stay positive and with odd indices become negative 随机数组中所有偶数索引的数字保持正数，奇数索引的数字成为负数。
+// this bassically guarantees that we get a waveform that's reasonably well centered around zero. we can scramble the result so it's not always alternating positive, negative, positive, negative ...
+
+
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] *[1, -1];
 
 (({rrand(0.0, 1.0)}!10) *[1, -1]).scramble;
+
+Synth
+// example 5-------------
 
 (
 var env, sig, wt, numSegs;
@@ -279,10 +340,42 @@ b.loadCollection(wt);
 sig.plot;
 )
 
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
 
 
-sig = LeakDC.ar(sig);
+// sig = LeakDC.ar(sig); // perventing leaning really hearvily into positive or negative territory
+// a filter that removes DC offset and centers the wave form around zero
+// very handy with experimental wavetable
 
+//DC offset  直流偏移 (https://en.wikipedia.org/wiki/DC_bias)
+//is an imbalance that sometimes occurs in A/D converters. When working with audio it is desirable to have only the audio program material passed through the signal path. Almost by definition audio, being a periodic waveform, is an AC (Alternating Current) signal. DC (direct current) is of the non alternating or periodic variety and thus has no constructive purpose as part of an audio signal. It is merely a constant voltage that is present which can eat up headroom and cause clicks and pops during editing.
+
+
+
+
+// (Approach 4)----------------------------------------------------------------------------------------
+//Signal.waveFill
+//it's a method that iterates over a signal and we provide a function to algorithmically 算法 fill that signal with new values. Because waveFill is an instance method, this means we have to create a new signal instance first.
+
+// example 1----
+(
+var sig, wt;
+sig = Signal.newClear(1024); // start with an empty signal
+sig.waveFill({
+	arg x, old, i; // pass in three argument.
+	//x = a value along an interval, which by default is from 0 to 1. so on the first iterative pass X is 0, halfway through it's 0.5 and when we get tp index 1023, X is just 1,  it's equal to 1023 divided by 1024, so it's just a normalized value that you can use in your algorithm
+	//old = is the current value in the signal and because this is a new empty singal this will be 0 on every iterative pass but this can be useful if you want to apply multiple waveFill operations to a signal in sequence one after the other and pass the output values back in for more processing.
+	//i = is an index, so this is simple an iteration counter 0 to 1023
+	sin(x); // make a sine wave
+}, 0 ,2pi); // we also have the option of supplying a min and a max afer the function to change the interval for the first argument so now it'll range from 0 to 2pi instead of 0 to 1
+
+wt = sig.asWavetable;
+b.loadCollection(wt);
+sig.plot;
+)
+
+
+// example 2----
 
 (
 var sig, wt;
@@ -290,17 +383,30 @@ sig = Signal.newClear(1024);
 sig.waveFill({
 	arg x, old, i;
 	var out;
-	out = sin(x.pow(1.5));
+	out = sin(x.pow(1.5)); //幂，乘方  this makes the frequency of the sine wave increase as x increases
 	out = out * 1.5;
-	out = out.fold(-1, 1);
+	out = out.fold(-1, 1); // we don't want wavetable values to go beyond -1 or 1, so we can fold these values back into the desired range
 	out = out.cubed;
 }, 0 ,2pi);
 
 wt = sig.asWavetable;
 b.loadCollection(wt);
-sig.plot;
+//sig.plot;
 )
 
+b.plot;
+
+{(Osc.ar(b, MouseX.kr(100, 10000, 1) * [1, 2.01 ], mul: 0.2!2))}.play;
+
+
+
+
+
+
+
+
+
+//way to create wavetable
 
 Signal.sineFill
 b.sine1/2/3
