@@ -18,8 +18,9 @@ http://www.granularsynthesis.com/hthesis/xenakis.html
 */
 
 //1. GrainBuf
-s.boot;
 s.options.sampleRate = 48000;
+s.boot;
+
 
 (
 s.meter;
@@ -28,9 +29,14 @@ s.scope;
 FreqScope.new;
 )
 
-b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01-44_1.aiff");// 可用任意音频，如音频格式不符，可用audacity转换为wav格式 ，可尝试正常人声
+//b = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01-44_1.aiff");
 
-//b = Buffer.read(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/zifuzhimingpart.wav");
+//b = Buffer.read(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/zifuzhimingpart.wav"); // 可用任意音频，如音频格式不符，可用audacity转换为wav格式 ，可尝试正常人声
+
+
+b = Buffer.readChannel(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/zifuzhimingpart.wav", channels:[0]);
+
+
 b.play;
 
 b.numChannels; //查看音频是否是单声道
@@ -314,7 +320,7 @@ b.duration/5   // 确定回放位置
 	var sig;
 	sig = GrainBuf.ar(
 		1,
-		Impulse.ar({ExpRand[60, 60.5]}!12), //instead of two we'll make 12 slightly different grain buffs,  each with a unique grain trigger and unique grain duration
+		Impulse.ar({ExpRand(60, 60.5)}!12), //instead of two we'll make 12 slightly different grain buffs,  each with a unique grain trigger and unique grain duration
 		LFNoise1.kr(0.3!12).exprange(0.0002, 0.1),
 		b,
 		1,
@@ -334,7 +340,7 @@ b.duration/5   // 确定回放位置
 	var sig;
 	sig = GrainBuf.ar(
 		1,
-		Dust.ar({ExpRand[60, 60.5]}!12),  //that's nice now like before if we swap impulse for dust our sense of pitch goes right out the window because the grains are no longer generated at a regular interval
+		Dust.ar({ExpRand(60, 60.5)}!12),  //that's nice now like before if we swap impulse for dust our sense of pitch goes right out the window because the grains are no longer generated at a regular interval
 		LFNoise1.kr(0.3!2).exprange(0.0002, 0.1),
 		b,
 		1,
@@ -491,7 +497,7 @@ b.duration/5   // 确定回放位置
 	sig = GrainBuf.ar(
 		2,
 		Impulse.ar(40),
-		1/20, // try 1/3, 1/4....
+		1/20, // try 1/3, 1/4.... 0.0001, 0.0005,        2*  1/40 = 1/20
 		b,
 		1,
 		Line.ar(0, 1, BufDur.ir(b), doneAction:2) ,
@@ -509,12 +515,12 @@ b.duration/5   // 确定回放位置
 //-----------------------
 //let's say we don't want too much structure in order instead of a perfectly straight line from zero to one, maybe we want this line to you know jiggle around a little bit as it makes that trip but maintain that overall trajectory from zero to one to do this all we have to do is add a little bit of noise to the line like we did before but for the sake of consistency i think it would make a little more sense, if we express these values in samples and convert to a normalized range between 0 and 1 as the very last step.
 // so our line is now going to represent a sample pointer from 0 to the last sample in the buffer, which has an index of the number of samples in the buffer minus one, and the duration of the line stays the same.
-// then we're going to add a fast moving noise generator with an output range of plus or minus a thousand samples or here if you prefer you can specify a value in seconds and then multiply that by the sample rate to convert to samples last because grain buff expects this value to be between 0 and 1.  we take the whole thing and divide by the number of samples in the buffer.
+// then we're going to add a fast moving noise generator with an output range of plus or minus a thousand samples or here if you prefer you can specify a value in seconds and then multiply that by the sample rate to convert to samples.  last because grain buff expects this value to be between 0 and 1.  we take the whole thing and divide by the number of samples in the buffer.
 
 //what's going on here is imagine yourself trying to draw a perfect circle with pencil and paper, it's obviously going to look like a circle but it won't be a perfect circle in this analogy the noise generator here basically represents the amount of human imperfection in the drawing and so if we increase this error little by little,  eventually the noise completely overwhelms the line
 
 // so with a deviation of a half second in either direction that's like trying to draw a perfect circle in the middle of an earthquake.
-
+ BufSamples.ir(b)
 
 (
 {
@@ -579,7 +585,7 @@ b.duration/5   // 确定回放位置
 		b,
 		1,
 		(
-		        Line.ar(BufSamples.ir(b)-1, 0, BufDur.ir(b) * 4, doneAction:2)  //*
+		        Line.ar(BufSamples.ir(b)-1, 0, BufDur.ir(b) *4, doneAction:2)  //*
 				+ LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
 		)/ BufSamples.ir(b),
 		2,
@@ -591,6 +597,36 @@ b.duration/5   // 确定回放位置
 }.play
 )
 
+
+
+(
+SynthDef(\grain, {
+	var sig, pan, out;
+	arg freq = 40,cs = 1, speed = 1,----
+	sig = GrainBuf.ar(
+		2,
+		Impulse.ar(freq),
+		1/20,
+		b,
+		1,
+		(
+		        Line.ar(BufSamples.ir(b)-cs, 0, BufDur.ir(b) *4, doneAction:2)  //*
+				+ LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
+		)/ BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+    )
+	pan = sig * xxxx
+	Out
+}).add;
+)
+
+
+Synth
+
+Pbind
 
 //--------------------------
 //let's say we want to go from beginning to end not once but over and over again well we're basically talking about sample looping, and we can't use line for this because line doesn't loop but there are a few Ugens that can do this relatively easily such as LFSaw, Sweep and Phaser and for completeness i'm
@@ -622,6 +658,7 @@ b.duration/5   // 确定回放位置
 }.play
 )
 
+{LFSaw.ar(10)}.plot(0.2)
 {LFSaw.ar(10, 1)}.plot(0.2)
 
 
