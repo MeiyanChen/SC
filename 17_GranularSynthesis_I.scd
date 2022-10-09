@@ -34,7 +34,7 @@ FreqScope.new;
 //b = Buffer.read(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/zifuzhimingpart.wav"); // 可用任意音频，如音频格式不符，可用audacity转换为wav格式 ，可尝试正常人声
 
 
-b = Buffer.readChannel(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/zifuzhimingpart.wav", channels:[0]);
+b = Buffer.readChannel(s, "/Volumes/Meiyan_Chen/Teaching Materials/吴思齐/Supercollider/zifuzhimingpart.wav", channels:[0]);
 
 
 b.play;
@@ -602,7 +602,7 @@ b.duration/5   // 确定回放位置
 (
 SynthDef(\grain, {
 	var sig, pan, out;
-	arg freq = 40,cs = 1, speed = 1,----
+	arg freq = 40,cs = 1, speed = 1,
 	sig = GrainBuf.ar(
 		2,
 		Impulse.ar(freq),
@@ -610,7 +610,7 @@ SynthDef(\grain, {
 		b,
 		1,
 		(
-		        Line.ar(BufSamples.ir(b)-cs, 0, BufDur.ir(b) *4, doneAction:2)  //*
+		        Line.ar(BufSamples.ir(b)-1, 0, BufDur.ir(b) *4, doneAction:2)  //*
 				+ LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
 		)/ BufSamples.ir(b),
 		2,
@@ -629,11 +629,11 @@ Synth
 Pbind
 
 //--------------------------
-//let's say we want to go from beginning to end not once but over and over again well we're basically talking about sample looping, and we can't use line for this because line doesn't loop but there are a few Ugens that can do this relatively easily such as LFSaw, Sweep and Phaser and for completeness i'm
+//let's say we want to go from beginning to end not once but over and over again well we're basically talking about sample looping, and we can't use line for this because line doesn't loop but there are a few Ugens that can do this relatively easily such as LFSaw, Sweep and Phaser and for completeness
 
-//LFSaw generates a pure sawtooth shape. it's just literally a repeating diagonal line from low to high it's an oscillator so it expects a frequency in hertz so to achieve normal pointer speed we need the duration of one cycle of lf saw to be equal to the duration of the buffer and because frequency and period have an inverse relationship.  we set the frequency to be 1 divided by buffer duration and since we're thinking in terms of samples the range of LFSaw should be from 0 to the number of samples -1.
+//LFSaw generates a pure sawtooth shape. it's just literally a repeating diagonal line from low to high it's an oscillator. so it expects a frequency in hertz so to achieve normal pointer speed. we need the duration of one cycle of lfsaw to be equal to the duration of the buffer, and because frequency and period have an inverse relationship.  we set the frequency to be 1 divided by buffer duration. and since we're thinking in terms of samples the range of LFSaw should be from 0 to the number of samples -1.
 
-
+b.play;
 
 
 (
@@ -662,7 +662,7 @@ Pbind
 {LFSaw.ar(10, 1)}.plot(0.2)
 
 
-//notice that it doesn't actually start at the beginning and that is because the default initial phase of LFSaw is zero, which causes the sawtooth to start at the midpoint of its diagonal segment. and that corresponds to the middle of the audio file so to fix that we provide a phase value of one which offsets the phase of LFSaw, so that it starts at the bottom.
+//notice that it doesn't actually start at the beginning and that is because the default initial phase of LFSaw is zero, which causes the sawtooth to start at the midpoint of its diagonal segment. and that corresponds to the middle of the audio file, so to fix that we provide a phase value of one which offsets the phase of LFSaw, so that it starts at the bottom.
 
 //from here we can use simple multiplication to scale the frequency as desired in order to move the pointer faster or slower
 (
@@ -675,7 +675,7 @@ Pbind
 		b,
 		1,
 		(            //*             *
-			LFSaw.ar(1/BufDur.ir(b), 1).range(0, BufSamples.ir(b)-1)  //*  try 2/BufDur,  0.5/BufDur,
+			LFSaw.ar(0.5/BufDur.ir(b), 1).range(0, BufSamples.ir(b)-1)  //*  try 2/BufDur,  0.5/BufDur,
 			+ LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
 		) / BufSamples.ir(b),
 		2,
@@ -719,7 +719,7 @@ Pbind
 
 
 //------------------------
-//Phaser is kind of like LFSaw in that it's a repeating linear ramp from a to b. the first argument is the reset trigger which i'm just going to put a 0 here and ignore it
+//Phasor is kind of like LFSaw in that it's a repeating linear ramp from a to b. the first argument is the reset trigger which i'm just going to put a 0 here and ignore it
 //Phasor automatically wraps back to the start when it gets to the end so this is only useful if we want to manually re-trigger phasor ourselves which we're not gonna do
 //next is rate and this is a per sample increment 增长, by default this is 1 which means phasor is basically counting the number of audio samples that have gone by, because we're thinking in terms of samples i'm going to leave this at 1. but again it's appropriate to multiply this by buff rate scale just in case we have a sample rate mismatch
 //after this phaser needs start and end values so we start at 0 and at number of samples -1
@@ -735,7 +735,7 @@ Pbind
 		b,
 		1,
 		(//              * try 4, 0.1   this value here is the one we want to change to make the grain pointer move faster or slower
-			Phasor.ar(0, 1* BufRateScale.ir(b)), 0, BufSamples.ir(b)-1)
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
 		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
 	    ) / BufSamples.ir(b),
 		2,
@@ -749,35 +749,126 @@ Pbind
 
 
 
-//
+// rate setting / pitch shifter ------------------------------------------------------------------
+/*this value is a ratio so 2 transposes every grain up an octave, classic chipmunk voice.  and 0.5 is an octave in the other direction.  and that is your basic demonic voice but the interesting thing here is that we're shifting pitch.
+
+without also affecting the total duration of the audio file and this is something that we can't really do using basic sample playback techniques with like playbuff and buff read okay.
+so let's adjust a few things and see if we can't make this pitch shifting effect a little bit cleaner for example we might consider using a higher grain  density and relatively long grains to kind of fill in all the gaps,  and we should anticipate that lots of grains possibly means higher amplitude so scaling back the amplitude is probably a good idea.
+
+
+*/
+
 
 (
 {
 	var sig;
 	sig = GrainBuf.ar(
 		2,
-		Impulse.ar(40),
-	    1/20, //0.2
+		Impulse.ar(100), // a higher grain  density
+	    0.2, // relatively long grains
 		b,
-	    -1.midiratio,
-		(Phasor.ar(0, 1* BufRateScale.ir(b)), 0, BufSamples.ir(b)-1) + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)) / BufSamples.ir(b),
+		0.5, // try 2, 0.5, 1.35, 0.7
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
+	    ) / BufSamples.ir(b),
 		2,
 		0,
 		-1,
 		512
 	);
-	sig = sig * 0.5;
+	sig = sig * 0.4; //scaling back the amplitude
 }.play
 )
 
 
+/*
+and keep in mind you don't have to think in terms of frequency ratios which can be kind of clumsy if you want to think in terms of musical semitones you can do so and just use midi ratio to convert
+
+if you've ever played around with pitch correction software, you've probably noticed that you can make small pitch change,  and kind of get away with it without anyone noticing.  but if you try to adjust by like several octaves then the sound just becomes utterly utterly ridiculous.
+*/
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Impulse.ar(100),
+	    0.2,
+		b,
+		0.midiratio, // try -1, -2, -3, -4, 30
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
 
 
+/*there is one possible pitfall to be aware of.  suppose we eliminate this random pointer deviation by collapsing the range to zero
+
+and so now let's play around with these rate values once again, weirdly all of a sudden the sound has this strong ringing character
+
+*/
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Impulse.ar(100),
+	    0.2,
+		b,
+		1,  //try 1.4, 1.5, 1.6, 0.7, 0.8
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.0 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
 
 
+/* let's swap this value for mouse x which might make it a little easier to hear what's going on. what I meant to put here was 0.5 comma 2 comma 1. but i gave myself a linear range from 0.5 to 2.1
+but basically we're having phase issues with overlapping grains.
+now if you've ever taken an audio recording class or maybe a musical acoustics class you might have heard of something called comb filtering (https://www.dpamicrophones.com/mic-university/the-basics-about-comb-filtering-and-how-to-avoid-it#:~:text=Comb%20filtering%20occurs%20when%20a,same%20signal%20at%20different%20positions.)  which is a type of resonance caused by a regular pattern of signal interference (https://zh.wikipedia.org/wiki/%E5%B9%B2%E6%B6%89_(%E7%89%A9%E7%90%86%E5%AD%A6)) .
 
+ often the result of a signal being added to a delayed copy of itself.
+and that's basically what's going on here there's grain generation rate grain duration the resampling factor resulting from the playback rate and of course there's also the content of the original audio file to consider and basically all these factors are working together to create a predictable pattern of phase related interference between overlapping grains as a result certain frequencies reinforce themselves and other frequencies cancel themselves out so in the end we get these unique spectral colors with very strong resonance at certain harmonics we can hear these clearly whenever the mouse is standing still and moving the mouse causes the resonances to kind of sweep up and down creating this kind of zipper effects
+*/
 
-
+(
+{
+	var sig;s
+	sig = GrainBuf.ar(
+		2,
+		Impulse.ar(100),
+	    0.2,
+		b,
+		MouseX.kr(0.5, 2.1).poll,
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.0 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
 
 
 
