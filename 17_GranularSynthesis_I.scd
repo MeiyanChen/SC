@@ -789,14 +789,14 @@ if you've ever played around with pitch correction software, you've probably not
 */
 
 (
-{
+{ arg pitch
 	var sig;
 	sig = GrainBuf.ar(
 		2,
 		Impulse.ar(100),
 	    0.2,
 		b,
-		0.midiratio, // try -1, -2, -3, -4, 30
+		30.midiratio, // try -1, -2, -3, -4, 30
 		(
 			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
 		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
@@ -825,7 +825,7 @@ and so now let's play around with these rate values once again, weirdly all of a
 		Impulse.ar(100),
 	    0.2,
 		b,
-		1,  //try 1.4, 1.5, 1.6, 0.7, 0.8
+		0.7,  //try 1.4, 1.5, 1.6, 0.7, 0.8
 		(
 			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
 		   + LFNoise1.ar(100).bipolar(0.0 * SampleRate.ir)   //*
@@ -842,15 +842,14 @@ and so now let's play around with these rate values once again, weirdly all of a
 
 /* let's swap this value for mouse x which might make it a little easier to hear what's going on. what I meant to put here was 0.5 comma 2 comma 1. but i gave myself a linear range from 0.5 to 2.1
 but basically we're having phase issues with overlapping grains.
-now if you've ever taken an audio recording class or maybe a musical acoustics class you might have heard of something called comb filtering (https://www.dpamicrophones.com/mic-university/the-basics-about-comb-filtering-and-how-to-avoid-it#:~:text=Comb%20filtering%20occurs%20when%20a,same%20signal%20at%20different%20positions.)  which is a type of resonance caused by a regular pattern of signal interference (https://zh.wikipedia.org/wiki/%E5%B9%B2%E6%B6%89_(%E7%89%A9%E7%90%86%E5%AD%A6)) .
-
- often the result of a signal being added to a delayed copy of itself.
+ comb filtering (https://www.dpamicrophones.com/mic-university/the-basics-about-comb-filtering-and-how-to-avoid-it#:~:text=Comb%20filtering%20occurs%20when%20a,same%20signal%20at%20different%20positions.)  which is a type of resonance caused by a regular pattern of signal interference (https://zh.wikipedia.org/wiki/%E5%B9%B2%E6%B6%89_(%E7%89%A9%E7%90%86%E5%AD%A6)) .
+often the result of a signal being added to a delayed copy of itself.
 and that's basically what's going on here there's grain generation rate grain duration the resampling factor resulting from the playback rate and of course there's also the content of the original audio file to consider and basically all these factors are working together to create a predictable pattern of phase related interference between overlapping grains as a result certain frequencies reinforce themselves and other frequencies cancel themselves out so in the end we get these unique spectral colors with very strong resonance at certain harmonics we can hear these clearly whenever the mouse is standing still and moving the mouse causes the resonances to kind of sweep up and down creating this kind of zipper effects
 */
 
 (
 {
-	var sig;s
+	var sig;
 	sig = GrainBuf.ar(
 		2,
 		Impulse.ar(100),
@@ -870,6 +869,162 @@ and that's basically what's going on here there's grain generation rate grain du
 }.play
 )
 
+
+
+
+/*
+the point is if you're aiming for a clean pitch shift this tiny amount of randomness in the grain pointer can make all the difference because even a tiny bit is enough to diffuse
+
+
+*/
+
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Impulse.ar(100),
+	    0.2,
+		b,
+		MouseX.kr(0.5, 2.1).poll,
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
+
+
+/* similarly you might find a slight improvement if you use dust instead of impulse.  for the grain trigger because that removes the inherent fundamental frequency of the grain trigger,
+because dust is random the overall amplitude of the output signal might be a little bit less consistent than impulse but it is not too much of a problem especially if you're generating plenty of grains
+
+
+
+*/
+
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Dust.ar(100),
+	    0.2,
+		b,
+		MouseX.kr(0.5, 2.1).poll,
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
+
+
+// with dust usually or at least in this case you can actually omit the slight randomness in the pointer and the pitch shift still sounds pretty good
+//you can decide for yourself which version you think sounds best
+
+
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Dust.ar(100),
+	    0.2,
+		b,
+		MouseX.kr(0.5, 2.1).poll,
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.00 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
+
+
+
+/*
+let's use the horizontal and vertical mouse position to control pitch and time independent of each other
+
+
+*/
+
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Dust.ar(100),
+	    0.2,
+		b,
+		MouseX.kr(0.5, 2.1),
+		(
+			Phasor.ar(0, MouseY.kr(0.1, 2.1)* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.0 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		2,
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
+
+
+
+
+//these four parameters grain trigger grain duration grain playback rate and grain start position i consider these four central pillars of grain buff
+
+//----------------------------------------------------------------------------
+//interpolation value
+
+// MouseY is what determines how samples are interpolated when the playback rate changes,  2 is linear but if we drop it to one then the change in quality is subtle but definitely audible particularly for downward pitch shifting so here's my voice down about half an octave with linear interpolation
+
+//down pitching means the granulator is stretching out the wave forming the grains. in that case it has to do some guesswork in between the original samples . and with no interpolation it's just not guessing at all so the resolution of the waveform degrades quite a bit and there's a noticeable loss of quality that manifests as a bunch of high frequency garbage,  so generally i would not recommend an interpolation of one now if you want to go up from linear to cubic personally i cannothear much of a difference in most cases but the increase in cpu is noticeable so
+
+(
+{
+	var sig;
+	sig = GrainBuf.ar(
+		2,
+		Dust.ar(400),
+	    0.1,
+		b,
+		0.7,
+		(
+			Phasor.ar(0, 1* BufRateScale.ir(b), 0, BufSamples.ir(b)-1)
+		   + LFNoise1.ar(100).bipolar(0.0 * SampleRate.ir)   //*
+	    ) / BufSamples.ir(b),
+		4
+        2, // try 1
+		0,
+		-1,
+		512
+	);
+	sig = sig * 0.4;
+}.play
+)
 
 
 
