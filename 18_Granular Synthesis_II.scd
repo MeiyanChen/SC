@@ -48,16 +48,13 @@ memory where we can read and write audio samples. let's say five seconds long, a
 
 1. a synthdef that uses soundin to read a signal from audio hardware and writes it to a bus, so that other processes can access it
 2. a synthdef that generates a periodic ramp 斜面，  and writes that signal to a different bus ， conceptually the output range corresponds to the size of the buffer with the duration of one complete cycle being equal to buffer duration
-3. a synthdef that reads the mic signal and ramp signal from those two buses and records the microphone signal
-into the buffer using the ramp as a sample index,  because the ramp sign periodically repeats this means that when we reach the end of the buffer we automatically jump back to the beginning and overwrite old samples with new
+3. a synthdef that reads the mic signal and ramp signal from those two buses and records the microphone signal into the buffer using the ramp as a sample index,  because the ramp sign periodically repeats this means that when we reach the end of the buffer we automatically jump back to the beginning and overwrite old samples with new
 samples
-4. a synthdef that uses grainbuf to generate grains from the contents of the buffer. for the grain start position we use the same ramp signal , but we subtract 减去 some amount from that signal use a modulo operation to wrap the result within the appropriate range,  and in effect we get a grain start pointer that tags along behind the record pointer sort of endlessly chasing it around.
+4. a synthdef that uses grainbuf to generate grains from the contents of the buffer. for the grain start position we use the same ramp signal , but we subtract 减去 some amount from that signal use a modulo operation 余数 to wrap the result within the appropriate range,  and in effect we get a grain start pointer that tags along behind the record pointer sort of endlessly chasing it around.
 
 modulo operation: https://zh.wikipedia.org/wiki/%E6%A8%A1%E9%99%A4
 
-there's a few interesting variations on this idea for one thing we could add a little randomness to the grain pointer so that it skitters around as it moves and this will have the effect of jumbling syllables and generally making the
-
-recording less intelligible
+there's a few interesting variations on this idea for one thing we could add a little randomness to the grain pointer so that it skitters around as it moves and this will have the effect of jumbling syllables and generally making the  recording less intelligible
 
 and another variation just because we only have one grain buff synthdef doesn't mean we're only allowed to make one synth for example we could make 5 synth, so that we have 5 grain pointers all generating grains independently all following behind the record pointer
 
@@ -103,7 +100,7 @@ SynthDef.new(\mic, {
 }).add;
 
 
-//use phaser to generate a repeating ramp to index into the buffer, the end value is defined as the rap point which means the ramp it generates goes up to that value but is never actually equal  to that value so for the end value we need bufframes not bufframes -1
+//use phaser to generate a repeating ramp 匝道 to index into the buffer, the end value is defined as the rap point which means the ramp it generates goes up to that value but is never actually equal  to that value so for the end value we need bufframes not bufframes -1
 
 SynthDef.new(\ptr, {
 	arg out = 0, buf = 0;
@@ -157,7 +154,7 @@ SynthDef.new(\gran, {
 	    baseDur = 0.05, durRand = 1,
 	    rate = 1, rateRand = 1,
 	    pan = 0, panRand = 0,
-	    grainEnv = (-1), ptrBus = 0, ptrSampleDelay = 20000;
+	    grainEnv = (-1), ptrBus = 0, ptrSampleDelay = 20000;  //*
 
 	var sig, env, densCtrl, durCtrl, rateCtrl, panCtrl, ptr;
 
@@ -179,13 +176,13 @@ and at a very basic level what we want to do is subtract this delay from the sam
 but there's an issue we need to consider here let's imagine a specific moment in time when the pointer signal is at 0 or just slightly above if the pointer delay is 20,000 samples or some other larger number,  then the end result is a negative pointer value but grain buff expects something between 0 and 1
 
 so probably a good idea to wrap this value between 0 and 1 which we can do with pointer dot wrap 0 comma 1
-or alternatively we can take the pointer value modulo 1 which has the same effect this being said it seems grain buff actually does this modulo operation internally
+or alternatively we can take the pointer value modulo 1 which has the same effect this being said it seems grain buff actually does this modulo operation internally  11’
 	*/
 
 	ptr = In.ar(ptrBus, 1);
 	ptr = ptr - ptrSampleDelay;
 	ptr  = ptr/BufFrames.kr(buf);
-	ptr = ptr % 1;
+	ptr = ptr % 1;   //ptr = ptr.wrap(0, 1); // the grain position is 0.6 and as long as we change this value in increments of 1  even going into negative values the results are identical, so putting a modulo operation in the synth def is technically not necessary
 
 	sig = sig * env * amp;
 	Out.ar(out, sig);
@@ -194,8 +191,8 @@ or alternatively we can take the pointer value modulo 1 which has the same effec
 
 z = Buffer.read(s, );
 z.play;
-
-{GrainBuf.ar(2, Impulse.ar(2.5), 0.5, z, 1, -5.4)}.play;
+                                           //pos
+{GrainBuf.ar(2, Impulse.ar(2.5), 0.5, z, 1, -5.4)}.play; // try 0.6, 1.6,  10.6, -5.4
 
 
 
@@ -209,7 +206,7 @@ SynthDef.new(\gran, {
 	    rate = 1, rateRand = 1,
 	    pan = 0, panRand = 0,
 	    grainEnv = (-1), ptrBus = 0, ptrSampleDelay = 20000;
-	    ptrRandSamples = 5000, minPtrDelay = 1000;
+	    ptrRandSamples = 5000, minPtrDelay = 1000; //*
 
 	var sig, env, densCtrl, durCtrl, rateCtrl, panCtrl, ptr, ptrRand, totalDelay;
 
@@ -219,14 +216,12 @@ SynthDef.new(\gran, {
 	rateCtrl = rate*LFNoise1.ar(100).exprange(1/rateRand, rateRand);
 	panCtrl = pan + LFNoise1.kr(100).bipolar(panRand);
 
-	/*the grain position is 0.6 and as long as we change this value in increments of 1  even going into negative values the results are identical
-
-so I'm pretty confident that putting a modulo operation in the synth def is technically not necessary
+	/*
 
 now if we want to implement that random skittering pointer effect will need a noise generator, which I'll call pointer Rand
 and I'm gonna give this a default range of 5,000 samples
 because there are now two things affecting grain pointer position
-I think it would be convenient to create a variable that represents the total number of samples, we're going to subtract from the incoming pointer so the total number of samples we subtract is equal to the base sample delay amount minus the point of randomness
+it would be convenient to create a variable that represents the total number of samples, we're going to subtract from the incoming pointer, so the total number of samples we subtract is equal to the base sample delay amount minus the point of randomness
 
 and then down here we're going to subtract the total delay from the pointer
 

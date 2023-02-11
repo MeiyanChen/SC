@@ -58,7 +58,7 @@ b.free;
 		Impulse.ar(10),    // whenever this value under goes a non-positive to positive transition, that GrainBuf's cue to generate a grain , try 12, 20, 30, 40
 		0.09, // duration of individual grains measured in seconds
 		b, // num of the buffer containing the audio that we want to granulate， mono （same as Tgrain, warp1）
-		1, // ratio corresponding to the playback speed of each grain  , htis behaves like the rate argument in PlayBuf,   1 is no changing pitch, two is an actave up, 0.5 is an octave down
+		1, // ratio corresponding to the playback speed of each grain  , this behaves like the rate argument in PlayBuf,   1 is no changing pitch, two is an actave up, 0.5 is an octave down
 		0.5, // playback position, the location in the buffer where each grain will start, 0 is the begining of the file, 1 is the end,   0.2 = 1/5
 		2, // interpolation (插值) which determins the type of sample interpolation if there's a change in playback speed， default is linear
 		0, // if number of channels is 1, the grainbuf ignores this argument, is number of channel is 2, then pan argument is interpreted as it is with Pan2
@@ -704,7 +704,7 @@ b.play;
 		b,
 		1,
 		( //                                      try 0.2, 3,
-			Sweep.ar(Impulse.ar(1/BufDur.ir(b)), 1* BufRateScale.ir(b))
+			Sweep.ar(Impulse.ar(1/BufDur.ir(b)), 1* BufRateScale.ir(b)) // 测量单位为秒
 			* SampleRate.ir
 			+ LFNoise1.ar(100).bipolar(0.01 * SampleRate.ir)
 		) / BufSamples.ir(b),
