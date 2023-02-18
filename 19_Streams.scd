@@ -72,8 +72,9 @@ p = Pbind(
 q = p.play;
 )
 
-//the distinction between a pattern and astream
+//the distinction between a pattern and a stream 数据流
 
+40.midicps
 
 x = Pseries(1, 1, inf)
 //a pattern like this one here defines some sequence but it is not the sequence itself, instead a pattern is a recipe or a blueprint for that sequence and if all we have is a pattern then there is no way for us to actually get the output directly from the pattern
@@ -82,10 +83,9 @@ x = Pseries(1, 1, inf)
 
 x = Pseries(1, 1, inf).asStream;
 //a stream is a tangible 明显 execution of some pattern and that's what we need a thing that actually says here's the next number.... so we can convert a pattern to a stream, using asStream.( it says routine here,) technically routine is a type of stream.  and then we can call .value or .next on the result,  and we actually get the values.
-rand
+
 x.next;
 x.value;
-x.please;
 
 
 
@@ -104,7 +104,7 @@ p = Pbind(
 	\amp, 0.5,
 );
 
-q = p.play; //q is independent from the p series stream
+q = p.play; //q is independent from the pseries stream
 )
 // if we stop the event stream player and even if you also reset the event stream player doing so does not also reset reps. internal stream remembers where it left off and we'll continue from there if we restart the event stream player
 

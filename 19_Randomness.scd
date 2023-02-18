@@ -19,17 +19,17 @@ thisThread.randSeed = 27;
 
 (
 thisThread.randSeed = 27;
-4.do({0.5.coin.postln}); //flipping a coin
+4.do({0.7.coin.postln}); //flipping a coin
 )
 
 
 (
 thisThread.randSeed = 27;
-4.do({ exprand(80, 8000).postln}); //using a different method like exprand and if we change the seed even by the smallest possible amount the results arecompletely different
+4.do({ exprand(80, 8000).postln}); //using a different method like exprand
 )
 
 (
-thisThread.randSeed = 23; // if we change the seed even by the smallest possible amount the results arecompletely different
+thisThread.randSeed = 24; // if we change the seed even by the smallest possible amount the results arecompletely different
 4.do({ exprand(80, 8000).postln});
 )
 
@@ -78,7 +78,7 @@ r.play;
 
 
 thisThread.randSeed = 24;  // parent thread 线, 脉络
-rrand(0, 99);
+rrand(0, 99);  // 不会影响母脉络随机数的输出
 
 (
 r = Routine.new({
@@ -104,12 +104,12 @@ r.reset.play;
 	loop{ //loop the process over and over again
 		{ //play Ugen function
 			var sig, freq;
-			freq = {exprand(80, 8000)}.dup; // random frequencies
-			sig = 8.collet({
+			freq = {exprand(80, 8000)}.dup(8); // random frequencies
+			sig = 8.collect({
 				arg i;
 				SinOsc.ar( // sine waves
-					freq:freq[i] * [-0.1, 0.1],
-					mul:0.05
+					freq: freq[i] * [-0.1, 0.1].midiratio,
+					mul: 0.05
 				);
 			}).sum;
 			sig = sig * EnvGen.ar( // envelope
@@ -118,7 +118,7 @@ r.reset.play;
 			);
 		}.play(fadeTime:0);
 
-		1.wait; // 0.yield;  same result //so when using next on a routine, this line is like a traffic cop that says stop and i will tell you when you can keep going
+		1.wait; // 1.yield;  same result //so when using next on a routine, this line is like a traffic cop that says stop and i will tell you when you can keep going
 	};
 });
 )
@@ -128,7 +128,7 @@ r.reset.play;
 ~player = Routine.new({
 	loop{
 		~soundMaker.randSeed_(~seed); // seed the first routine
-		6.do{ //six times in a row it calls next on the first routine and then waits for 0.12 seconds
+		6.do{ //six times in a row, it calls next on the first routine and then waits for 0.12 seconds
 
 			~soundMaker.next;  //jump to iteration blook
 			0.12.wait;
@@ -137,24 +137,24 @@ r.reset.play;
 });
 )
 
-//calling next on a routine tells it to start evaluating and then come to a full stop if it runs into a weight so this one is totally arbitrary it could be any number and you can also replace weight with yield same result
+//calling next on a routine tells it to start evaluating and then come to a full stop if it runs into a wait.  you can also replace wait with yield same result
 
 
 
-~seed = 44; // prepare a seed value  // try to change the value, 45, 46, 47
+~seed = 45; // prepare a seed value  // try to change the value, 45, 46, 47
 ~player.play; // play the second routine, we get six random bloops that then repeat indefinitely
 
-~player.resetplay;
+~player.reset.play;
 ~player.stop;
 
-//because seed is a global variable inside a continually reevaluated process we can swap it out in real time,  but the seed only updates at the beginning of a sixth note cycle,  so the rhythm is preserved.
+//because seed is a global variable inside a continually reevaluated process.we can swap it out in real time,  but the seed only updates at the beginning of a sixth note cycle,  so the rhythm is preserved.
 
 
 
 //--------------------
-//all these techniques are exclusively language side so it only applies to rng in sc lang not on the server
+//all these techniques are exclusively language side,  so it only applies to RNG in sclang not on the server
 
-//the behavior is different the randomness no longer repeats,  because now the rng lives on the server an entirely different program with a separate rng mechanism, find the solution check RandID, RandSeed
+//if we swap the x brand method for the exprand UGen, the behavior is different.  the randomness no longer repeats,  because now the RNG lives on the server an entirely different program with a separate RNG mechanism, find the solution check RandID, RandSeed
 
 (
 ~soundMaker = Routine.new({
@@ -164,30 +164,29 @@ r.reset.play;
 			freq = {ExpRand(80, 8000)}.dup; // swap the exprand method for the xprand ugen
 			sig = 8.collet({
 				arg i;
-				SinOsc.ar( // sine waves
+				SinOsc.ar(
 					freq:freq[i] * [-0.1, 0.1],
 					mul:0.05
 				);
 			}).sum;
-			sig = sig * EnvGen.ar( // envelope
+			sig = sig * EnvGen.ar(
 				Env.perc(0.002, 0.1),
 				doneAction:2
 			);
 		}.play(fadeTime:0);
 
-		1.wait; // 0.yield;  same result //so when using next on a routine, this line is like a traffic cop that says stop and i will tell you when you can keep going
+		1.wait;
 	};
 });
 )
 
-// second looping routine
+
 (
 ~player = Routine.new({
 	loop{
-		~soundMaker.randSeed_(~seed); // seed the first routine
-		6.do{ //six times in a row it calls next on the first routine and then waits for 0.12 seconds
+		~soundMaker.randSeed_(~seed);
 
-			~soundMaker.next;  //jump to iteration blook
+			~soundMaker.next;
 			0.12.wait;
 		};
 	};
