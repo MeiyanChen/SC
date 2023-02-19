@@ -1,3 +1,5 @@
+s.options.sampleRate = 48000;
+
 s.boot;
 // referance: randomness
 
@@ -59,7 +61,7 @@ r.play;
 
 r.stop;
 
-//but a routine can have its own seed and one option is to use the rand seed method on the routine before it plays
+//but a routine can have its own seed and one option is to use the randseed method on the routine before it plays
 (
 r = Routine.new({
 	loop{
@@ -70,6 +72,7 @@ r = Routine.new({
 r.randSeed = 25;
 r.play;
 )
+
 
 //or you can use this thread inside the routine in which case it refers to the new child thread instead of the main parent thread
 //and in this case resetting the routine has the side effect of reseeding the rng. because reseeding takes place in the routine
@@ -104,11 +107,11 @@ r.reset.play;
 	loop{ //loop the process over and over again
 		{ //play Ugen function
 			var sig, freq;
-			freq = {exprand(80, 8000)}.dup(8); // random frequencies
+			freq = {exprand(80, 8000)}.dup(8); // random frequencies, duplicate
 			sig = 8.collect({
 				arg i;
 				SinOsc.ar( // sine waves
-					freq: freq[i] * [-0.1, 0.1].midiratio,
+					freq: freq[i] * [-0.1, 0.1].midiratio, // 在序列数中选其中一个
 					mul: 0.05
 				);
 			}).sum;
@@ -139,9 +142,9 @@ r.reset.play;
 
 //calling next on a routine tells it to start evaluating and then come to a full stop if it runs into a wait.  you can also replace wait with yield same result
 
+~soundMaker.play;
 
-
-~seed = 45; // prepare a seed value  // try to change the value, 45, 46, 47
+~seed = 46; // prepare a seed value  // try to change the value, 45, 46, 47
 ~player.play; // play the second routine, we get six random bloops that then repeat indefinitely
 
 ~player.reset.play;
@@ -154,14 +157,14 @@ r.reset.play;
 //--------------------
 //all these techniques are exclusively language side,  so it only applies to RNG in sclang not on the server
 
-//if we swap the x brand method for the exprand UGen, the behavior is different.  the randomness no longer repeats,  because now the RNG lives on the server an entirely different program with a separate RNG mechanism, find the solution check RandID, RandSeed
+//if we swap the xprand method for the exprand UGen, the behavior is different.  the randomness no longer repeats,  because now the RNG lives on the server an entirely different program with a separate RNG mechanism, find the solution check RandID, RandSeed
 
 (
 ~soundMaker = Routine.new({
 	loop{
 		{
 			var sig, freq;
-			freq = {ExpRand(80, 8000)}.dup; // swap the exprand method for the xprand ugen
+			freq = {ExpRand(80, 8000)}.dup; // swap the exprand method for the Exprand ugen
 			sig = 8.collet({
 				arg i;
 				SinOsc.ar(
@@ -191,7 +194,7 @@ r.reset.play;
 		};
 	};
 });
-)
+
 
 
 

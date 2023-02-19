@@ -3,7 +3,7 @@ s.boot;
 //slide from one value to the next over a period of time
 // freq / amp
 
-//lag is a UGen. it's essentially a type of low-pass filter that causes a signal to interpolate between changes over a period of time. in the case of pitch, it creates a glissando effect.and in more general terms lag makes a signal behave sluggishly 慢吞吞地  like it's moving through molasses or something
+//lag滞后is a UGen. it's essentially a type of low-pass filter that causes a signal to interpolate between changes over a period of time. in the case of pitch, it creates a glissando effect.and in more general terms lag makes a signal behave sluggishly 慢吞吞地  like it's moving through molasses or something
 
 (
 SynthDef(\gliss, {
@@ -57,7 +57,7 @@ SynthDef(\gliss, {
 
 x = Synth(\gliss);
 x.set(\freq, 76.midicps, \freqlag, 0.25);
-x.set(\freq, 71.midicps, \freqlag, 3);
+x.set(\freq, 71.midicps, \freqlag, 10);
 x.set(\freq, 80.midicps, \freqlag, 0); //you can effectively bypass 避开 a lag by setting the lag time to 0. don't use negative numbers
 x.set(\gate, 0);
 
