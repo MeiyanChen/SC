@@ -41,6 +41,7 @@ SynthDef(\gliss, {
 
 
 
+
 (
 SynthDef(\gliss, {
 	arg freq = 440, freqlag = 1, gate = 1, amp = 0.3, out = 0;
