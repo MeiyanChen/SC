@@ -6,10 +6,13 @@ s.boot;
 
 play{GVerb.ar(VarSaw.ar(Duty.ar(1/5, 0, Dseq(x = [[4,4,5],[2,3,5,6]];flat(x*.x allTuples(x*.x x)*4).clump(2)++0)),0, 0.9)*LFPulse.ar(5), 99, 5)/5}
 
+
+rrand(0.0, 100.0);
+
 (
 var freq;
 z = [[4,4,5],[2,3,5,6]];
-freq = z *.x z; //
+freq = z *.x z; // multiplication + adverb
 freq = allTuples(freq);
 freq = z *.x freq;
 freq = freq * 4;

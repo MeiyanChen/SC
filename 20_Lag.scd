@@ -86,8 +86,8 @@ SynthDef(\gliss, {
 
 x = Synth(\gliss);
 x.set(\freq, 220, \freqlag, 2, \freqcrv, 0);
-x.set(\freq, 440, \freqlag, 2, \freqcrv, 15);
-x.set(\freq, 220, \freqlag, 2, \freqcrv, -15);
+x.set(\freq, 440, \freqlag, 2, \freqcrv, 15); // 先慢后快
+x.set(\freq, 220, \freqlag, 2, \freqcrv, -15);//先快后慢
 x.set(\gate, 0);
 
 //so here's our tone going down an octave over two seconds linearly going up an octave with a positive curve and down an octave once more with a negative curve
@@ -133,6 +133,8 @@ x.set(\gate, 0);
 //now quick note about var lag though it is useful and flexible.  it can and likely will exhibit weird behavior if applied to an audio rate signal as discussed in this warning, here at the top of the help file
 //but lag has a few other siblings, lag2and lag3 are shortcuts for double and triple nested lags. so to wrap up here's one more example to help visualize these behaviors
 
+
+VarLag.kr
 
 (
 {
