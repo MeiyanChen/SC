@@ -1,13 +1,23 @@
 s.options.sampleRate = 48000;
 s.boot;
 //Binary Operators 二进制算符
+
+//   1, 0
+//0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+//0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F
+
 // .x   -> adverb
 // reference:  Operators, J concepts in SC
 
 play{GVerb.ar(VarSaw.ar(Duty.ar(1/5, 0, Dseq(x = [[4,4,5],[2,3,5,6]];flat(x*.x allTuples(x*.x x)*4).clump(2)++0)),0, 0.9)*LFPulse.ar(5), 99, 5)/5}
 
 
-rrand(0.0, 100.0);
+// Array
+
+postln,
+poll
+plot
+trace
 
 (
 var freq;
@@ -89,7 +99,7 @@ f = f.reject({|n| n > 108});
 
 
 
-
+// pitch, rythm, tempo, instrument/timbre, harmony, structure
 
 
 
