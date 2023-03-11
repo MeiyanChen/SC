@@ -40,7 +40,7 @@ x.free;
 
 
 //it will not work correctly.  and in fact this is such a common pitfall that there's a dedicated page on the supercollider website.
-// check if statements in a SynthDef
+// check if statements in a SynthDef (https://supercollider.sourceforge.net/wiki/index.php/If_statements_in_a_SynthDef)
 //so no matter how we manipulate the argument, we always get noise.  and if we change the conditional expression to num < 1, then the synthetic just fails out right, and says the expression is non-boolean,  which seems outrageou.  because num is 0, and we just want to know, is it less than one
 
 
@@ -216,7 +216,7 @@ Synth(\if);
 	sig = PinkNoise.ar(1!2);
 	amp = LFDNoise3.kr(4).exprange(0.02, 0.5);   //amplitude of pink noise randomly moves between 0.02 and 0.5
 	isLoud = amp > 0.1; //if it's greater than 0.1 isLoud has a value of 1 otherwise 0.
-	isLoud.poll;
+	isLoud.poll; // check
 	sig = sig * amp;
 }.play;
 )
