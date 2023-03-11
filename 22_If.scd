@@ -1,3 +1,4 @@
+s.options.sampleRate = 48000;
 s.boot;
 
 // reference: control structures
@@ -7,7 +8,7 @@ s.boot;
 f = {
 	arg num = 0;  //we have a function with an argument if
 	if(
-		num == 0;
+		num == 0,
 		{ {SinOsc.ar(500)*0.2!2}.play},  // it's zero play a tone
 		{ {PinkNoise.ar(1)*0.2!2}.play} //otherwise play some noise
 	);
