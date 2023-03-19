@@ -39,6 +39,18 @@ x.set(\num, 0);
 x.free;
 
 
+SynthDef(\kablooie, { |x = 0|
+	var signal;
+	if(x > 0) {
+		signal = SinOsc.ar
+	} {
+		signal = Saw.ar
+	};
+});
+
+True == 1.0
+False == 0.0
+
 //it will not work correctly.  and in fact this is such a common pitfall that there's a dedicated page on the supercollider website.
 // check if statements in a SynthDef (https://supercollider.sourceforge.net/wiki/index.php/If_statements_in_a_SynthDef)
 //so no matter how we manipulate the argument, we always get noise.  and if we change the conditional expression to num < 1, then the synthetic just fails out right, and says the expression is non-boolean,  which seems outrageou.  because num is 0, and we just want to know, is it less than one
@@ -241,6 +253,7 @@ Synth(\if);
 }.play;
 )
 
+EnvGen
 
 //the hardest part i think is training yourself not to think in conventional terms of "if", then "else". and instead think in terms of ones and zeros. and then mathematically weave these numbers into your algorithms to get the results you want
 
