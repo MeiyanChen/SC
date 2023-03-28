@@ -46,7 +46,7 @@ r = Routine.new({  //hear all three at the same time
 	Synth.new(\play, [buf: ~bowl, rate: -5.midiratio]);
 	Synth.new(\play, [buf: ~bowl, rate: 2.midiratio]);
 });
-)
+).play;
 
 (
 r = Routine.new({
@@ -124,27 +124,65 @@ r.reset; //rewinding back to the beginning and that lets you play it again
 ~noteGen.next;
 ~noteGen.reset;
 
-TempoClock.default.tempo;
+TempoClock.default.tempo; // beats per second
 
-t = TempoClock.new(72/60);
+//https://zh.wikipedia.org/wiki/%E9%80%9F%E5%BA%A6_(%E9%9F%B3%E6%A8%82)
+
+t = TempoClock.new(72/60); // 72 bpm = 72/60 bps
+//Beat per minute, Beat per second
+
+t = TempoClock.new(120/60); // 2 beat per second
 
 t.beats;
+// what is your current beat,  hold shift and return down and you can see it's it's counting beats here
 
-t.sched(0, {"hi".postln; 1;});
+//if we press command period I've pressed command period that destroys any Tempo clocks other than the default Tempo clock that one lives forever
 
-t.schedAbs(t.nextBar, {"hi".postln});
+//有时我们需要有效停止tempoclock， 有时不需要
+t = TempoClock.new(72/60).permanent_(true); //永久有效， command period immune clock
+
+t.sched(4, {"hi".postln; 1;});  //sched -》 schedule, schedule the following function to be evaluated four beats from now
+
+//sched is a relative scheduling method that need provide two things. 1. a duration measured in Beats from now and  2. a function to be evaluated that many beats in the future
+
+t.schedAbs(190, {"hi".postln});//absolute scheduling/ absolude beat value.  it is so that occurred on beat 190
+
+t.schedAbs(t.nextBar, {"hi".postln}); //the default number of beats per bar, is a four
+//so whenever I run this it sort of figures out its current beat, and it Compares it against it's beats per bar that is stored here. it just says okay what's the what's the beat number of the next cluster of four beats the next downbeat. basically so this is a way of of saying do this on the next downbeat. schedule this function on the next bar
 
 t.beatsPerBar;
 
 t.stop;
 
+
+
+
+//post beats information in post windows
+
+//if you schedule a function on a Tempo clock and it returns a number, then this function will be rescheduled that many beats later so it's a way to get a function to happen over and over and over again
 (
-~postinfo = { t.beats.postln; 1; };
+~postinfo = { t.beats.postln; 1; }; //this is going to be the function that gets scheduled on the clock, 1 means a Tempo clock makes it reschedule everyone beat
 t = TempoClock.new(72/60).permanent_(true);
 t.sched(0, { ~postinfo.() });
 )
 
-~postinfo = { };
+t.sched(0, {"hi".postln; 1;}); // it schedules, it gonna at the immediately and it posts the string high and then Waits For One Beat and then schedules it again.there's no good way to unschedule this.  command period stop the clock
+
+~postinfo = { }; //停止看到拍子unschedules this function because suddenly it's evaluating this function which has nothing in it so nothing happens and it doesn't return a number so no more function stuff
+
+
+(//重启看到拍子
+~postinfo = { t.beats.postln; 1; };
+t.sched(0, { ~postinfo.() });
+) //bring the function back , because the tempo clock is still going, we didn't stop the clock. we just unscheduled that function from it
+
+
+//back on track
+(
+~postinfo = { t.beats.postln; 1; };
+t.schedAbs(t.nextBar, { ~postinfo.() });
+)
+
 
 (
 ~postinfo = { t.beats.postln; 1; };
@@ -158,6 +196,9 @@ t.schedAbs(t.nextBar, {"hi".postln});
 t.beatsPerBar;
 
 t.beats;
+
+
+
 
 (
 ~noteGen = Routine.new({
@@ -174,15 +215,23 @@ t.beats;
 ~soundGen = Routine.new({
 	inf.do({
 		Synth.new(\play, [buf: ~bowl, rate: ~noteGen.next.midiratio]);
-		0.25.yield;
+		0.25.yield; // number of beats,it is in fact following the tempo information of the clock
 	});
 });
 )
 
+~soundGen.play;//default tempoclock
+
+~soundGen.play(t); //clock t, four notes for every one of these values
+
+//we quantize it and we want this to come in on a beat that's a multiple of four and we provide the Quant information
+~soundGen.play(t, 8); //it's going to look at uh sort of from time zero and it's got all of these four beats per bar and it's going  to come in on the next downbeat of a pair of two bars
+
 ~soundGen.play(t, [4, -1]);
+
 
 ~soundGen.stop;
 
 ~soundGen.reset;
 
-t.tempo_(108/60);
+t.tempo_(108/60); //change the tempo

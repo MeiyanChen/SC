@@ -48,12 +48,33 @@ SynthDef.new(\play, {
 )
 
 
+x.set
 
 //
 var scale = [0, 3, 5, 7, 10];
 Array.fill(8, {scale.choose})  // it fills an array with eight numbers chosen from our scale variable
 
+C   D   E F   G   A    B
+0 1 2 3 4 5 6 7 8 9 10 11
 
+
+[ 7, 3, 0, 5, 0, 0, 5, 10 ]
+
+
+(
+var scale = [0, 3, 5, 7, 10]; // iterate by order of the array  //scale  minor pendatonic
+7.do({ |n|   // the number of synth to iterate
+	 // transpose (steps in semitones )
+	Synth.new(
+		\play,
+		[
+			buf: b.bufnum,
+			rate: n.midiratio,   // change the pitch
+
+		]
+	);
+});
+)
 
 (
 var scale = [0, 3, 5, 7, 10]; // iterate by order of the array  //scale  minor pendatonic
@@ -69,7 +90,7 @@ Array.fill(8, {scale.choose}).do({ |n|   // the number of synth to iterate
 			pan: rrand(-0.8, 0.8),
 			atk: exprand(0.002, 0.2), // soften the attack
 			rel: exprand(3, 10), // longer the release
-			spos: s.sampleRate * rrand(2.0, 4.0), // 去掉淡出淡入
+			spos: s.sampleRate * rrand(2.0, 4.0), // 去掉淡入
 			loop: 1,
 			amp: 1,
 			hpf: 200,  // check differences
@@ -110,6 +131,8 @@ coll.do({ |n|
 });
 )
 
+
+
 (
 r = Routine.new({
 
@@ -126,7 +149,7 @@ r = Routine.new({
 			]
 		);
 
-		yield(rrand(0.1, 0.7));
+		yield(rrand(0.1, 0.7)); // wait  // 0.1.yield; 0.1.wait;
 
 	});
 
