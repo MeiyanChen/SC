@@ -101,12 +101,13 @@ r.reset; //rewinding back to the beginning and that lets you play it again
 		});
 	});
 });
+)
 
 // yield is a stopping point  ->  yield that value and we pause and the routine is staying right at this moment until we say next and then it goes and it's picked a random value
 
 ~noteGen.next;
 ~noteGen.reset;
-
+(
 
 (
 ~soundGen = Routine.new({
@@ -139,15 +140,15 @@ t.beats;
 //if we press command period I've pressed command period that destroys any Tempo clocks other than the default Tempo clock that one lives forever
 
 //有时我们需要有效停止tempoclock， 有时不需要
-t = TempoClock.new(72/60).permanent_(true); //永久有效， command period immune clock
+t = TempoClock.new(120/60).permanent_(true); //永久有效， command period immune clock
 
-t.sched(4, {"hi".postln; 1;});  //sched -》 schedule, schedule the following function to be evaluated four beats from now
+t.sched(4, {"hi".postln;4;});  //sched -》 schedule, schedule the following function to be evaluated four beats from now //前一个四表示的是起始拍，后一个4表示间隔
 
 //sched is a relative scheduling method that need provide two things. 1. a duration measured in Beats from now and  2. a function to be evaluated that many beats in the future
 
 t.schedAbs(190, {"hi".postln});//absolute scheduling/ absolude beat value.  it is so that occurred on beat 190
 
-t.schedAbs(t.nextBar, {"hi".postln}); //the default number of beats per bar, is a four
+t.schedAbs(t.nextBar, {"hi".postln; 1;}); //the default number of beats per bar, is a four
 //so whenever I run this it sort of figures out its current beat, and it Compares it against it's beats per bar that is stored here. it just says okay what's the what's the beat number of the next cluster of four beats the next downbeat. basically so this is a way of of saying do this on the next downbeat. schedule this function on the next bar
 
 t.beatsPerBar;
@@ -162,7 +163,7 @@ t.stop;
 //if you schedule a function on a Tempo clock and it returns a number, then this function will be rescheduled that many beats later so it's a way to get a function to happen over and over and over again
 (
 ~postinfo = { t.beats.postln; 1; }; //this is going to be the function that gets scheduled on the clock, 1 means a Tempo clock makes it reschedule everyone beat
-t = TempoClock.new(72/60).permanent_(true);
+t = TempoClock.new(60/60).permanent_(true);
 t.sched(0, { ~postinfo.() });
 )
 
@@ -193,7 +194,7 @@ t.sched(4, {"hi".postln});
 
 t.schedAbs(t.nextBar, {"hi".postln});
 
-t.beatsPerBar;
+t.beatsPerBar; // 每小节有几拍
 
 t.beats;
 
@@ -204,13 +205,16 @@ t.beats;
 ~noteGen = Routine.new({
 	var pch;
 	inf.do({
-		pch = -12;
+		pch = -12.25;
 		8.do({
 			pch.yield;
-			pch = pch + rrand(1,6);
+			pch = pch + rrand(1.25,6.5);
 		});
 	});
 });
+
+
+1 - 12
 
 ~soundGen = Routine.new({
 	inf.do({
