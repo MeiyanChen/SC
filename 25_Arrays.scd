@@ -4,7 +4,7 @@ x = [3, 7, 12, -4.5, 0, 101]; //we have an array stored in the interpreter varia
 
 x.size; // 大小
 
-x.at(2);//access an item by index
+x.at(2);//access an item by index, 0, 1, 2 ,3
 x[2];
 
 x.at([1,3,4]); //request an array of indices
@@ -23,14 +23,15 @@ x = (100,98..200);// 错误写法
 
 x.size;
 x = Array.series(1001, 0, 1); //大小，开始，计数方法 （加法）
-x = Array.series(1001, 0, 7);
+x = Array.series(1001, 1000, -7);
+x = Array.series(7, 260, 20);
 
-x = Array.geom(10, 2, 2); //乘法
+x = Array.geom(7, 2, 2); //乘法
 x = Array.geom(10, 2, 0.5);  // 可 用于调整音量
 
-x = Array.rand(10, 100, 200); //10 random values between 100 and 200
+x = Array.rand(7, 100, 200); //10 random values between 100 and 200
 
-
+rrand(0, 10);
 //we use arrays to represent multi-channel signals like a stereo signal is an array of two signals and when we want to scale the amplitude we might multiply it by some value like 0.5 and we want that to apply to both channels so this is a very useful way to define this type of operation
 
 x = [100, 200, 300];
