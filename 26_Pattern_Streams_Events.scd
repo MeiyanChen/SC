@@ -1,4 +1,4 @@
-s.boot;
+ s.boot;
 
 
 //Patterns
@@ -230,7 +230,7 @@ q = p.asStream;
 
 q.next;
 
-
+ rrand(1,3)
 //this rrand gets evaluated it's going to it's going to turn into some hard value and that's going to be permanently baked into this pattern
 (
 p = Pseq([10,20,30], rrand(1,3));
@@ -239,7 +239,7 @@ q = p.asStream;
 q.reset; //if we reset this and start again it's not going to pick a different number and just because we reset, it does not compel the stream. because the pattern stream are separate objects the pattern has been defined
 q.next;
 
-// like Pfunc, P lazy evaluates a function and that function is supposed to return a pattern and that's the pattern that gets embedded in the Stream
+// like Pfunc, Plazy evaluates a function and that function is supposed to return a pattern and that's the pattern that gets embedded in the Stream
 
 //when we call next the Plazy is going to evaluate its function, and return this pattern. because we're actually evaluating this function, it's going to interpret the whole thing again and pick.  it's a way of forcing a pattern to come into existence again a new value
 (
@@ -313,9 +313,11 @@ e.removeAt(\minnow); // remove the key
 e.removeAt(\goldfish);
 e.removeAt(\guppy);
 
+
 //events are used to store things. but events are also used to model actions taken in response to a play message.
 
-().play;// so you can have an empty event and play it
+().play;
+// so you can have an empty event and play it
 //this is possible because under the hood there is a vast and complex and sophisticated event prototype structure
 //so there are many different types of events and each of those events models some sort of action, and the default action is to play. it create a synth and play a sound based on some synth Def
 
@@ -323,7 +325,7 @@ e.removeAt(\guppy);
 //the example above, we're just making an event it doesn't have a type, it's just a collection of things
 
 
-Event.eventTypes.keys; //all of the types of events that exist
+Event.eventTypes.keys;  //all of the types of events that exist
 
 //note event, note is actually the default type of event when you play an event which means we could say type note. note is the default type which means we don't have to specify it and that will be the type automatically chosen for us
 
@@ -340,8 +342,8 @@ Event.eventTypes.keys; //all of the types of events that exist
 
 
 (freq: 500).play
-(amp: 0.1).play
-(pan: 0.1).play
+(amp: 0.8).play
+(pan: 0.5).play
 
 
 x = Synth(\default); //doesn't actually turn off because it's a sustaining envelope
