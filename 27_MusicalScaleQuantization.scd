@@ -39,13 +39,14 @@ s.boot;
 
 //1.  load a collection of scale degrees into a buffer
 ~scale0 = Buffer.loadCollection(s, Scale.minorPentatonic.degrees);
+~scale3 = Buffer.loadCollection(s, [0, 2, 4, 6, 8, 10]);
 //check Scale -> Creation -> Scale.directory
 ~scale0.plot; // hit the m key on keyboard once to plot the data as points stretch it vertically and we can see this buffer contains five values which are 0 3 5 7 and 10
 
 
 0  1  2  3  4  5  6  7  8  9  10  11  12
 C     D     E  F     G     A      B    C
-C     bE       F     G        bB
+C        bE    F     G        bB
 
 //use a ugen called index which retrieves buffer values using the integer part of its input signal as an index.
 (
@@ -69,7 +70,7 @@ C     bE       F     G        bB
 {
 	var sig,index, pch, freq;
 	index = LFDNoise0.kr(7).range(0, 4);
-	index = index * BufFrames.kr(~scale0);
+	index = index * BufFrames .kr(~scale0);
 	index.poll(7);
 	pch = DegreeToKey.kr(~scale0, index) + 36;
 	freq = pch.midicps;
@@ -90,6 +91,7 @@ C     bE       F     G        bB
 }.play;
 )
 
+
 //convert above code into synthdef
 
 (
@@ -107,7 +109,7 @@ SynthDef(\d2k, {
 
 (
 ~scale1 = Buffer.loadCollection(s, [0, 4, 6, 7, 10]);
-~scale2 = Buffer.loadCollection(s, [0, 3, 7, 9, 10]);
+~scale2 = Buffer.loadCollection(s, [0, 2, 8, 9, 10]);
 )
 
 x = Synth(\d2k, [\buf, ~scale0]);
