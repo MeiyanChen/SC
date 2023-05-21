@@ -1,5 +1,5 @@
 s.boot;
-
+s.option
 //USE HEADPHONES!! this lecture/code document includes a lot of live microphone sound
 
 // delay-based synthesis
@@ -80,7 +80,7 @@ SynthDef(\del, {
 //extremely large max delay times (or numerous delay synths) will throw memory allocation failure messages
 SynthDef(\del, {
 	var sig, del;
-	sig = In.ar(\in.kr(0), 2);
+	sig = In.ar(\in.kr(0), 2); //
 	del = DelayN.ar(sig, 100, 1);
 	sig = sig.blend(del, 0.4);
 	sig = sig * \amp.kr(1);
@@ -100,7 +100,8 @@ s.reboot;
 
 48000 * 4 / 1000 * 2; //kB needed for 1-second stereo delay buffer
 48000 * 4 / 1000 * 2 * 100; //kB needed for 100 second stereo delay buffer
-//if we're at 48 000 samples per second that's 32-bit is four bytes so it's 192 000 bytes per second divide that by a thousand and we get 192 kilobytes per second multiply by 2 for stereo 384 kilobytes so 8192 is enough it's more than enough for a stereo one second delay but if we want um a 100 second delay that's 38.4 megabytes
+//if we're at 48 000 samples per second, 32-bit is 4 bytes (https://web.stanford.edu/class/cs101/bits-bytes.html), so it's 192 000 bytes per second divide that by a thousand and we get 192 kilobytes per second， multiply by 2 for stereo, 384 kilobytes. so 8192 is enough. it's more than enough for a stereo one second delay but if we want a 100 second delay that's 38.4 megabytes
+
 
 
 (
@@ -114,11 +115,11 @@ SynthDef(\del, {
 }).add;
 )
 
-~del = Synth(\del, [\in, ~fxBus, \del, 0.25], ~fxGrp);
+~del = Synth(\del, [\in, ~fxBus, \del, 0.25], ~fxGrp); // a quarter second delay
 ~del.set(\del, 0.05);
 ~del.set(\del, 0.5);
 ~del.set(\del, 1);
-~del.set(\del, 1.5); //fails — delay buffer not big enough
+~del.set(\del, 1.5); //fails — delay buffer not big enough -> so one second is our theoretical maximum
 
 2.pow(16)/s.sampleRate; //SC actually allocates a buffer with size = next highest power of 2
 
@@ -128,12 +129,14 @@ SynthDef(\del, {
 //doesn't
 ~del.set(\del, 1.3654);
 
+
+
 (
 SynthDef(\del, {
 	var sig, del;
 	sig = In.ar(\in.kr(0), 2);
 	del = DelayN.ar(sig, 4, \del.kr(1));
-	sig = sig.blend(del, \mix.kr(0.4));
+	sig = sig.blend(del, \mix.kr(0.4)); //change the mix between the dry signal and the delayed signal
 	sig = sig * \amp.kr(1);
 	Out.ar(\out.kr(0), sig);
 }).add;
@@ -156,10 +159,42 @@ s.bind({
 	});
 
 	//one fully "dry" (bypassed) delay effect
+	~del = ~del.add(Synth(\del, [\in, ~fxBus, \mix, 0, \del, 0, \amp, 1], ~fxGrp)); //add one more synth to this array of 20 ,send it through a delay where we don't listen to the delayed signal at all and the delay time is zero
+
+});
+)
+
+// linlin is a mapping method
+(0..19).linlin(0, 19, 200, 300) //array starting at 200 ending at 300 with a linear distribution
+(0..19).linexp(0, 19, 200, 300) //it's an exponential curve
+(0..19).lincurve(0, 19, 200, 300, 0) // last arguments 0 > linear (equally spaced) 1 > exponential
+//0 (linear)      <0 (concave, negatively curved)         >0 (convex, positively curved)
+
+//reference: SimpleNumber
+
+
+
+(
+s.bind({
+
+	~del = 20.collect({
+		arg n;
+		Synth(\del, [
+			\in, ~fxBus,
+			\mix, 1,
+			\amp, 0.1,
+			\del, n.linlin(0,19,0.15,4)
+		], ~fxGrp
+		);
+	});
+
 	~del = ~del.add(Synth(\del, [\in, ~fxBus, \mix, 0, \del, 0, \amp, 1], ~fxGrp));
 
 });
 )
+
+
+
 
 (
 //add L/R spatial control via Balance2
@@ -168,7 +203,7 @@ SynthDef(\del, {
 	sig = In.ar(\in.kr(0), 2);
 	del = DelayN.ar(sig, 4, \del.kr(1));
 	sig = sig.blend(del, \mix.kr(0.4));
-	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1));
+	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1)); //we cannot Pan2 a stereo signal,  sig[0] left, sig[1] right
 	Out.ar(\out.kr(0), sig);
 }).add;
 )
