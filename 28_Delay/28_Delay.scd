@@ -172,8 +172,6 @@ s.bind({
 
 //reference: SimpleNumber
 
-
-
 (
 s.bind({
 
@@ -195,6 +193,10 @@ s.bind({
 
 
 
+{SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 0)}.play;
+{SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 1)}.play;
+{SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 0.5)}.play;
+{SinOsc.ar(200, 0, 0.2!2).blend(Saw.ar(40, 0.05!2), 0.5)}.play;
 
 (
 //add L/R spatial control via Balance2
@@ -203,7 +205,7 @@ SynthDef(\del, {
 	sig = In.ar(\in.kr(0), 2);
 	del = DelayN.ar(sig, 4, \del.kr(1));
 	sig = sig.blend(del, \mix.kr(0.4));
-	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1)); //we cannot Pan2 a stereo signal,  sig[0] left, sig[1] right
+	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1)); //we cannot Pan2 a stereo signal,  sig[-1] left, sig[1] right
 	Out.ar(\out.kr(0), sig);
 }).add;
 )
@@ -218,7 +220,7 @@ s.bind({
 			\mix, 1,
 			\amp, n.linlin(0,19,-3,-30).dbamp,
 			\del, n.lincurve(0,19,0.02,2,2),
-			\pan, rrand(-1.0,1.0),
+			\pan, rrand(-1.0,1.0), // n.linlin(0, 19, -1, 1) go from left to right
 		], ~fxGrp
 		);
 	});
@@ -229,6 +231,7 @@ s.bind({
 )
 
 //what if we modulate the delay time?
+//if you want to make this delay time move around in real time, like modulate it with a sine wave,  you should not be using any delay ugen that ends with N, because these are non-interpolating delay lines and so as the delay time moves there's a delay read pointer that's internal to the process and it's being asked to change its delaytime,  which has the result of moving it faster or more slowly through the buffer and so the samples don't line up with the sample clock, when it moves at a at a different speed from the the normal speed
 
 (
 //it's bad to use non-interpolating delay ugens with a dynamic delay time
@@ -245,9 +248,12 @@ SynthDef(\del, {
 )
 
 ~del = Synth(\del, [\in, ~fxBus, \mix, 0.4], ~fxGrp);
+//different pitch changes in the voice
+
+
 
 //loading a buffer as alternate sound source
-b = Buffer.read(s, "/Users/eli/Documents/Illinois/Teaching/AY 2020-2021/Spring 2021/MUS 499C/Livestream Code/livestream_code_week06/delay.aiff");
+b = Buffer.read(s, "/Users/meiyanchen/Documents/GitHub/SC/28_Delay/delay.aiff");
 
 b.play;
 b.numChannels;
@@ -258,9 +264,9 @@ s.sampleRate;
 //Select uses in index to select a signal from an array
 SynthDef(\source, {
 	var sig;
-	sig = Select.ar(\choose.kr(1), [
-		SoundIn.ar(0!2),
-		PlayBuf.ar(1!2, b, loop:1),
+	sig = Select.ar(\choose.kr(1), [   //selects from one of several input sources in an array
+		SoundIn.ar(0!2), //index: 0
+		PlayBuf.ar(1!2, b, loop:1), // index: 1
 	]);
 	sig = sig * \amp.kr(1);
 	Out.ar(\out.kr(0), sig);
@@ -272,7 +278,7 @@ SynthDef(\source, {
 SynthDef(\del, {
 	var sig, del;
 	sig = In.ar(\in.kr(0), 2);
-	del = DelayL.ar(sig, 1, SinOsc.kr(0.2).range(0.1,1).poll);
+	del = DelayL.ar(sig, 1, SinOsc.kr(0.2).range(0.1,1).poll); // try delayN first, see the difference
 	sig = sig.blend(del, \mix.kr(0.4));
 	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1));
 	Out.ar(\out.kr(0), sig);
@@ -280,9 +286,23 @@ SynthDef(\del, {
 )
 
 ~del = Synth(\del, [\in, ~fxBus, \mix, 0.4], ~fxGrp);
-~del.set(\mix, 1);
+~del.set(\mix, 1); //all the delayed signal and none of the original buffer
 ~del.free;
 
+//when the delay time is going from high to low , the pitch goes up, when the delay time is going from low to high, the pitch goes down.  that is something that some people might not be expecting to hear in a delay line. you expect to hear when you change the delay line, you sort of expect to hear an echo that gets farther and farther away and closer and closer away to the source sound in time, but instead we get this glissando thing going on here
+
+//usually we draw buffers as like a line with like a bunch of individual  rectangles in it, because the buffer has like a start and an end. and it's got a certain length.   But in a delay line, a buffer is allocated but it is treated as if it were circular, so the last frame is adjacent to the first frame. so it kind of goes around and around forever.
+
+//so in a delay line, basically it's the same thing as like playbuf and recordbuf, we have some writing process. some process which is responsible for writing samples into the buffer.
+
+//as time progresses this write pointer moves through the buffer, just imagine counter clockwise is forward through the buffer and it just writes samples. and then chasing behind it.  we have some read pointer which is also moving around and if it's a fixed delay time then this amount of time let's call it 0.5 , that's a five seconds.  so if you're a fixed delay time. the distance between the read and write pointer is always the same.
+
+//but that's not the case in the one. what we're doing right here we have a sine wave we got some right sine wave, it's going up and down and this is at the top is the max delay and at the bottom is the minimum delay. so the distance is changing. it's like sort of extending. out to be one full second, and catching up to be 1 seconds. and so over time, this signal that's modulating the delay, (it is similar to the grain buf and tgrains have an interpolation argument and that determines what kind of interpolation is going to happen, if the grains get played back at a non original speed). so basically as a sine wave is going from it's peak to its valley. it's going from the maximum delay time to the minimum delay time. and so the read pointer is catching up to the right pointer as they both spin around. in that moment it's reading through samples that have been stored in that buffer faster, then the sine wave turns around starts going from minimum to maximum delay time, stretches out again. and so you have the slowing speeding up and slowing down.
+
+//so you really want to have an interpolating delay line like delay l or delay c, so that you can smoothly read those samples at a different rate and that's why we get this pitch shifting stuff as we read through it. so now if you watch the numbers again as they go from low to high the pitch goes down, as they go from high to low the pitch goes up, and as the sine wave is leveling off just for a brief moment the slope of the sine wave is zero. it's like not changing and so at that moment the pitch kind of centers at the original pitch for a while actually part of a family, part of three units.
+
+
+//--------------------------------------------------
 (
 //flanger effect
 SynthDef(\del, {
@@ -290,8 +310,8 @@ SynthDef(\del, {
 	sig = In.ar(\in.kr(0), 2);
 	del = DelayL.ar(
 		sig,
-		1/10,
-		SinOsc.kr(\delhz.kr(0.2)).range(\delmin.kr(1/1000), \delmax.kr(1/100)).poll;
+		1/10, //tenth of a second buffer
+		SinOsc.kr(\delhz.kr(0.2)).range(\delmin.kr(1/1000),  \delmax.kr(1/100)).poll; //delhz: the speed of the modulator
 	);
 	sig = sig.blend(del, \mix.kr(0.4));
 	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1));
@@ -299,7 +319,7 @@ SynthDef(\del, {
 }).add;
 )
 
-~del = Synth(\del, [\in, ~fxBus, \mix, 0.4], ~fxGrp);
+~del = Synth(\del, [\in, ~fxBus, \mix, 0.4], ~fxGrp); // the pitch variations are so slightly
 
 ~del.set(\mix, 1); //listen to only delayed signal — imperceptible pitch shifts
 
@@ -307,19 +327,21 @@ SynthDef(\del, {
 ~del.set(\delhz, 5);
 
 ~del.free;
+// increased the frequency of the modulator so it's going the sine wave frequency has increased quite a bit and so it's going from a thousandth of a second to 100th of a second, really fast and so the slope of that sine wave is actually much steeper and so the pitch changes are much more drastic and faster, so that's by increasing the speed of the modulator. it doesn't just make the flanger effect faster. it makes it more extreme in terms of pitch.
+//----------------------------
 
 (
 //more complex flanger effect — four summed modulated delays
 SynthDef(\del, {
 	var sig, del;
 	sig = In.ar(\in.kr(0), 2);
-	del = 4.collect({
+	del = 4.collect({ //make an array of four delay lines
 		DelayL.ar(
 			sig,
 			1/10,
 			SinOsc.kr(ExpRand(0.1,0.2), Rand(0, 2pi)).range(1/ExpRand(1000,2000), 1/ExpRand(20,100))
-		);
-	}).sum;
+		); //each sine wave they don't all start in phase now. each one's going to startat some random point in its cycle, so that they don't line up and then drift out of phase. they'll just start randomly out of phase from each other. minimum delay is going to be somewhere between a millisecond and half a millisecond, maximun delay is from 20th of a second to one hundredth of a second
+	}).sum; //and then add them together (sum)
 	sig = sig.blend(del, \mix.kr(0.4));
 	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1));
 	Out.ar(\out.kr(0), sig);
@@ -331,3 +353,5 @@ SynthDef(\del, {
 ~del.free;
 
 s.freeAll;
+
+//try C, it's cubic interpolation instead of linear so it's more computationally expensive but more nice and smoother
