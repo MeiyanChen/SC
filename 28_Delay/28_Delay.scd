@@ -192,7 +192,7 @@ s.bind({
 )
 
 
-
+// how to use method blend
 {SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 0)}.play;
 {SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 1)}.play;
 {SinOsc.ar(200, 0, 0.2).blend(Saw.ar(40, 0.05), 0.5)}.play;
@@ -205,7 +205,7 @@ SynthDef(\del, {
 	sig = In.ar(\in.kr(0), 2);
 	del = DelayN.ar(sig, 4, \del.kr(1));
 	sig = sig.blend(del, \mix.kr(0.4));
-	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1)); //we cannot Pan2 a stereo signal,  sig[-1] left, sig[1] right
+	sig = Balance2.ar(sig[0], sig[1], \pan.kr(0), \amp.kr(1)); //we cannot Pan2 a stereo signal,  sig[0] left, sig[1] right
 	Out.ar(\out.kr(0), sig);
 }).add;
 )
