@@ -17,7 +17,7 @@ s.plotTree;
 (
 //simple mic input SynthDef
 SynthDef(\source, {
-	var sig; arg out = 0,
+	var sig;
 	sig = SoundIn.ar(0!2); //read signal from microphone to two channels
 	sig = sig * \amp.kr(1);//amplitude adjustment which is by default having no effect
 	Out.ar(\out.kr(0), sig); //write it out to a bus
@@ -304,7 +304,7 @@ SynthDef(\del, {
 
 //--------------------------------------------------
 (
-//flanger effect
+//flanger effect 飘忽效果
 SynthDef(\del, {
 	var sig, del;
 	sig = In.ar(\in.kr(0), 2);
