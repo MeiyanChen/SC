@@ -220,7 +220,7 @@ s.bind({
 			\mix, 1,
 			\amp, n.linlin(0,19,-3,-30).dbamp,
 			\del, n.lincurve(0,19,0.02,2,2),
-			\pan, rrand(-1.0,1.0), // n.linlin(0, 19, -1, 1) go from left to right
+			\pan, n.linlin(0, 19, -1, 1) , // n.linlin(0, 19, -1, 1) go from left to right
 		], ~fxGrp
 		);
 	});
