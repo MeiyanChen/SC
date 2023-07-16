@@ -140,14 +140,15 @@ SynthDef(\reverb, {
 ////////////////////////////////////////
 
 //delay-based realtime harmonizer
+//take any signal(a microphone, a buffer, or a synthesized) and it will pitch shift it based on some number of semitones in real time without affecting the duration
 
 (
 SynthDef(\delharm, {
 	var sig, phs, del, env, rate, maxdel=0.05;
 	rate = \n.kr(0).midiratio - 1 / maxdel;
-	sig = In.ar(\in.ir(0), 2);
-	phs = LFSaw.ar(rate.neg, [1,0]).range(0,maxdel);
-	env = SinOsc.ar(rate, [3pi/2,pi/2]).range(0,1).sqrt;
+	sig = In.ar(\in.ir(0), 2); // input signal
+	phs = LFSaw.ar(rate.neg, [1,0]).range(0,maxdel); // pointer
+	env = SinOsc.ar(rate, [3pi/2,pi/2]).range(0,1).sqrt;  //we use an oscillator signal as an envelope, and we synchronize that oscillator's frequency with the frequency of the delay time signal. so that the oscillator envelope touches zero right as the delay pointer approaches the discontinuity and so it kind of fades it out and fades back in
 	del = DelayC.ar(sig, maxdel, phs) * env;
 	del = del.sum!2 * \amp.kr(0.85);
 	Out.ar(\out.ir(0), del);
@@ -155,7 +156,13 @@ SynthDef(\delharm, {
 )
 
 ~del = Synth(\delharm, [\in, ~fxBus], ~fxGrp);
-~del.set(\n, 6);
+~del.set(\n, 6); //in semitone
+
+
+0  1  2  3  4  5  6  7  8  9  10  11  12
+C     D     E  F     G     A      B    C
+C        bE    F     G        bB
+
 
 (
 ~del = [
@@ -171,7 +178,7 @@ SynthDef(\delharm, {
 /////////////////////////////////////////
 
 //extrapolating:
-[-48, -15/16]
+[-48, -15/16]  //the desired transposition in semitones, the required frequency of the sawtooth wave
 [-36, -7/8]
 [-24, -3/4]
 [-12, -1/2]
@@ -181,12 +188,17 @@ SynthDef(\delharm, {
 [36, 7]
 [48, 15]
 
+//transposing down so the sawtooth wave needs to be ascending, and transposing up so it needs to be descending
+
+n.midiratio -1; //Convert an interval in semitones to a ratio
+
+// clicks problem
 (
 SynthDef(\delharm, {
-	var sig, phs, del, env, rate, maxdel=0.05;
+	var sig, phs, del, env, rate, maxdel=0.05; // delay buffer shouldn't be too small
 	rate = \n.kr(0).midiratio - 1 / maxdel;
 	sig = In.ar(\in.ir(0), 2);
-	phs = LFSaw.ar(rate.neg, [1,0]).range(0,maxdel);
+	phs = LFSaw.ar(rate.neg, [1,0]).range(0,maxdel); // neg is the negtive of default LFSaw shape, we want the phase start at the minimum and go to the maximum and it's ranging from zero seconds of delay to the maximum delay. make an array of two sawtooth waves one of which has an initial phase of one and the other has an initial phase of zero
 	env = SinOsc.ar(rate, [3pi/2,pi/2]).range(0,1).sqrt;
 	del = DelayC.ar(sig, maxdel, phs) * env;
 	del = del.sum!2 * \amp.kr(0.85);
@@ -194,11 +206,17 @@ SynthDef(\delharm, {
 }).add;
 )
 
+
 ~del = Synth(\delharm, [\in, ~fxBus], ~fxGrp);
 ~del.set(\n, -7);
 
-{LFSaw.ar(100, [1,0])}.plot(0.05);
-{SinOsc.ar(100,[3pi/2,pi/2]).range(0,1).sqrt}.plot(0.05)
+{LFSaw.ar(100)}.plot(0.05); //the default LFSaw shape
+{LFSaw.ar(100.neg)}.plot(0.05); //inverts the shape of the sawtooth wave
+
+{LFSaw.ar(100, [1,0])}.plot(0.05);  //our delay time modulator signals
+{SinOsc.ar(100,3pi/2)}.plot(0.05);
+{SinOsc.ar(100,[3pi/2,pi/2]).range(0,1).sqrt}.plot(0.05) //the amplitude signals that are modulating the amplitude of these two delay taps
+//square root, the decibel levels shake out so that it's a more uniform sound. when you have two sound sources both at -3, you sum them together, you get a plus three increase so this might be an equal power
 
 (
 x = [
