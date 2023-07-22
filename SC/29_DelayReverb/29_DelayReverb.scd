@@ -1,3 +1,6 @@
+s.options.sampleRate = 48000;
+s.boot;
+
 s.options.memSize = 2.pow(20);
 s.reboot;
 
@@ -156,7 +159,7 @@ SynthDef(\delharm, {
 )
 
 ~del = Synth(\delharm, [\in, ~fxBus], ~fxGrp);
-~del.set(\n, 6); //in semitone
+~del.set(\n, -1); //in semitone
 
 
 0  1  2  3  4  5  6  7  8  9  10  11  12
@@ -208,7 +211,7 @@ SynthDef(\delharm, {
 
 
 ~del = Synth(\delharm, [\in, ~fxBus], ~fxGrp);
-~del.set(\n, -7);
+~del.set(\n, -1);
 
 {LFSaw.ar(100)}.plot(0.05); //the default LFSaw shape
 {LFSaw.ar(100.neg)}.plot(0.05); //inverts the shape of the sawtooth wave
