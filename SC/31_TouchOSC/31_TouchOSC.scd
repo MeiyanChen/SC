@@ -13,6 +13,7 @@ NetAddr.langPort; //confirm receiving port
 
 //create an instance of NetAddr for sending OSC to TouchOSC
 ~touchosc = NetAddr.new("192.168.178.22", 9000);
+~sc = NetAddr.new("192.168.178.22", 57120);
 
 //app address->    https://hexler.net/touchosc
 // download: touchosc editor  https://hexler.net/touchosc-mk1#downloads
@@ -20,16 +21,21 @@ NetAddr.langPort; //confirm receiving port
 //touchOSC need to be in the same network with your computor
 //the incoming port is relevant if you want to actually send osc from the computer to touchosc
 
+//send/ receive
+//outcoming/ incoming
+
 (
 OSCdef.new(\listener, {
 	arg msg;
 	msg.postln;
 	//code that does the thing we want to happen goes here
-}, '/1/fader5', nil, 57120); // /1/fader5 ( a symbol, can be writing as '1/fader5') is the name from touchosc, can see from trace information
+}, '/1/fader1', nil, 57120); // /1/fader5 ( a symbol, can be writing as '1/fader5') is the name from touchosc, can see from trace information
 )
 
 s.boot;
 
+
+//-------------------------------------
 (
 SynthDef.new(\tone, {
 	var sig, env;
@@ -44,6 +50,10 @@ SynthDef.new(\tone, {
 x = Synth.new(\tone, [\gate, 1]);
 x.set(\gate, 0);
 
+a = [1, 2, 3];
+a[1]
+
+
 (
 x = Synth.new(\tone, [\gate, 0]); // control the sound on and off by gate
 
@@ -53,6 +63,8 @@ OSCdef.new(\listener, {
 }, '/1/push1', nil, 57120);
 )
 
+
+//-----------------------
 (
 ~scale = [0,12,24,36,48].collect({
 	arg n;
@@ -69,7 +81,7 @@ OSCdef.new(\listener, {
 (1..5).do({
 	arg row;
 	(1..5).do({
-		arg col;
+		arg col; // column
 		var index = (row-1) * 5 + (col-1);
 		OSCdef.new(("multi"++row++col).asSymbol, { //the name of each oscdef   multi11, multi12...
 			arg msg;
@@ -79,6 +91,8 @@ OSCdef.new(\listener, {
 });
 )
 
+2-1
+
 1 1 --> 0
 1 2 --> 1
 ...
@@ -87,15 +101,16 @@ OSCdef.new(\listener, {
 ...
 5 5 --> 24
 
+"/1/multipush1/" ++ 1 ++ "/" ++ 2
 
 ~synth[7].set(\gate,0);
 
 "hello"++3++"goodbye"
 
-s.defaultGroup.set(\gate, 0);
+s.defaultGroup.set(\gate, 0); //
 
 OSCdef.freeAll;
 OSCFunc.trace(false);
 
 //sending OSC messages to TouchOSC
-~touchosc.sendMsg('/1/fader4', rrand(0.0,1.0))
+~touchosc.sendMsg('/1/fader1', rrand(0.0,1.0))
