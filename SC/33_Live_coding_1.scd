@@ -1,7 +1,7 @@
 // two way to start with livecoding: 1. with blank sheet. 2. planed structure
 
 
-//Reference: JITLib (Just in Time library). it's a collectionof classes and methods which are highly optimized for live coding
+//Reference: JITLib (Just in Time library). it's a collection of classes and methods which are highly optimized for live coding
 
 // NodeProxy, Ndef, ProxySpace
 
@@ -20,11 +20,13 @@ s.boot;
 //NodeProxy
 
 n = NodeProxy.new(s, \audio, 2);
+e = NodeProxy.new(s, \audio, 2);
 n.play;
+e.play;
 
 //if we change the definition while it's playing it just kind of replaces the old one rather than creating a second one
 
-n.source = {LFTri.ar([300,302]) * 0.2};
+n.source = {LFTri.ar([300,302]) * 0.9};
 n.source = {LFTri.ar([300,302] * 0.5) * 0.06 * SinOsc.kr(0.5).range(0.2,0.8)};
 n.source = {BPF.ar(PinkNoise.ar(0.5!2), 500, 0.1, 2)};
 n.source = nil;
@@ -37,7 +39,7 @@ n.play;
 
 //release/create source process
 n.release;
-n.release(5);
+n.release(12);
 n.send;
 
 //end both processes
@@ -45,10 +47,10 @@ n.end;
 n.play;
 
 //end and reset proxy to neutral state
-// there is clear which is similar to "end". but it will also reset the NodeProxy's source to a neutral state. so if we try to play it again, we don't hear anything. because it also has the effect of just resetting the node proxy to a state where it's like we've never used it
+// there is clear which is similar to "end". but it will also reset the NodeProxy's source to a neutral state. so if we try to play it again, we don't hear anything. because it also has the effect of just resetting the nodeproxy to a state where it's like we've never used it
 
 n.clear;
-n.clear(5); // a amount of time to fade it out before the actual removal of those nodes
+n.clear(15); // a amount of time to fade it out before the actual removal of those nodes
 
 
 
@@ -123,8 +125,8 @@ Ndef(\n, {
 	var sig, f;
 	f = t.tempo;
 	sig = PinkNoise.ar(0.5!2);
-	sig = BPF.ar(sig, SinOsc.kr(f/4).exprange(200,2000), 0.1, 4); //a sine wave which is going up and down at one one cycle per second
-	sig = sig * LFPulse.kr(f*8, [0,0.1], 0.2);
+	sig = BPF.ar(sig, SinOsc.kr(f/1).exprange(200,2000), 0.1, 2); //a sine wave which is going up and down at one one cycle per second
+	sig = sig * LFPulse.kr(f*2, [0,0.1], 0.8);
 });
 )
 
@@ -146,12 +148,17 @@ Ndef(\n)
 ~a = 5;
 ~b = 7;
 
+// using these tilde things which we call global variables and we just sort of take this for granted and rightfully. so because it's extremely convenient. it allows us to create a name create store a value in a persistent name that we can keep forever.We call these global variables, but they're not actually global. they are specific to a particular environment and when we launch supercollider we start it up for the first time, there is something called "the current environment". it's an instance of an environment that is automatically created for us and this tilde business is basically a syntax shortcut for putting a value in the current environment at the name uh designated by the thing that comes after the tilde
+
+
 true
 false
 nil
 thisProcess
 currentEnvironment;
+//this is a special a special keyword that refers to the current environment
 
+//check reference: syntax shortcut
 ~x = 17;
 
 \lunch.envirPut("pizza");
@@ -160,8 +167,8 @@ currentEnvironment;
 
 ~lunch
 
-e = Environment.new;
-e.push;
+e = Environment.new; //make a new environment
+e.push; // push the new environment as the current environment
 
 currentEnvironment;
 
@@ -172,7 +179,7 @@ currentEnvironment;
 
 e;
 
-e.pop;
+e.pop; // show the old environment, and make it as the current one
 
 currentEnvironment;
 
