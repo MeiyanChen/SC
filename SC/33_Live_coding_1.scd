@@ -165,6 +165,7 @@ currentEnvironment;
 
 currentEnvironment;
 
+
 ~lunch
 
 e = Environment.new; //make a new environment
@@ -188,18 +189,19 @@ currentEnvironment.keys.do({arg key; currentEnvironment.removeAt(key)});
 ~lunch
 
 currentEnvironment;
+//ProxySpace is a special type of environment in which every tilde thing is a nodeproxy. so this eliminates the need of having to type out NodeProxy or Ndef we can just give things names and work with them directly
 
 (
 //create clock if one does not already exist
-//t = TempoClock.new(84/60).permanent_(true);
+t = TempoClock.new(84/60).permanent_(true);
 p = ProxySpace.new(s, clock:t);
 p.quant_(4);
 p.push;
-)
+) //inside a ProxySpace, every environment variable is a NodeProxy
 
 currentEnvironment;
 
-//inside a ProxySpace, every environment variable is a NodeProxy
+
 ~sig;
 ~sig.play;
 
@@ -208,7 +210,7 @@ currentEnvironment;
 
 ~sig.fadeTime_(4);
 
-~sig.clock;
+~sig.clock; //because we gave the ProxySpace a clock all of the NodeProxy objects in this ProxySpace inherit that clock. so they're all on that clock value
 ~sig.quant;
 ~sig.quant_(0.5);
 
@@ -216,6 +218,9 @@ currentEnvironment;
 ~sig2.quant;
 
 p.clear;
+
+
+//------
 
 (
 SynthDef.new(\filtsaw, {
@@ -232,7 +237,7 @@ SynthDef.new(\filtsaw, {
 (
 x = Pbind(
 	\instrument, \filtsaw,
-	\dur, 0.25,
+	\dur, 0.25,  //when we play a pattern, if we play it on a particular clock this "dur" value is interpreted as a value in beats not seconds
 	\midinote, Pseq([28,28,40,28,40],inf) + [0,0.1],
 	\cf, (Pkey(\midinote).midicps * 8).min(20000),
 	\rq, Pexprand(0.1,0.5,inf),
@@ -264,13 +269,7 @@ x.stop;
 );
 )
 
+// change the values in real time
+
 ~pat = nil;
-
-//next time:
-//how to use buffers? (this doesn't work in a ProxySpace)
-~buf = Buffer.read(s, "/Users/eli/Documents/Illinois/Teaching/AY 2020-2021/Spring 2021/MUS 499C/Livestream Code/livestream_code_week11/delay.aiff");
-
-//modularity
-
-//applying effects
 

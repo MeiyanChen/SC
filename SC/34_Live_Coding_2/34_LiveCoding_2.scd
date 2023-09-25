@@ -1,3 +1,5 @@
+s.options.sampleRate = 48000;
+
 s.boot;
 
 
@@ -26,7 +28,8 @@ p = ProxySpace.new(s).push;
 //buffers
 //this won't work if the current environment is a ProxySpace
 
-~buf = Buffer.read(s, "/Users/eli/Documents/Illinois/Teaching/AY 2020-2021/Spring 2021/MUS 499C/Livestream Code/livestream_code_week12/audio/alm.aiff");
+~buf = Buffer.read(s,"/Users/meiyanchen/Documents/GitHub/SC/SC/34_Live_Coding_2/audio/bowl.aiff");
+
 
 ~buf.clear;
 
@@ -82,12 +85,12 @@ e.freq[0] = Array.fill(8, {exprand(200,1000)});
 ~sig.play.fadeTime_(3);
 ~sig = {
 	var sig, trig, env, buf, rel, rate;
-	rel = {exprand(0.2,2)}!12;
+	rel = {exprand(0.4,2)}!12;
 	trig = Trig.kr(Dust.kr(1!12), rel); //*12 channel triger/ unique trigger signals. the triggers will randomly hold themselves open for some amount of time all 12 of them
 	rate = TChoose.kr(trig, (-12..24).midiratio); // pitch
 	buf = TChoose.kr(trig, (0..3).collect({arg n; e.buf[n]}));
 	sig = PlayBuf.ar(1, buf, rate, trig);
-	env = Env.perc(0.001, rel, 1, -2).kr(0, trig);
+	env = Env.perc(0.2, rel, 1, -2).kr(0, trig);
 	sig = sig * env;
 	sig = Splay.ar(sig);
 }
@@ -117,6 +120,8 @@ e.freq[0] = Array.fill(8, {exprand(200,1000)});
 //how do i do effects?  how do i route one NodeProxy into one or more effects?  how do i chain effects in series?  how do i do effects in parallel?  how do i like mix several proxies together?
 
 ~sig.clear;
+
+
 
 (
 ~sig.play.fadeTime_(3);
@@ -248,11 +253,13 @@ p.clear;
 }
 )
 
+
+// directly plug in the signal
 (
 ~verb.play.fadeTime_(3);
 ~verb = {
 	var sig;
-	sig = GVerb.ar(~del.ar(1) + ~sig.ar(1), 250, 9);
+	sig = GVerb.ar(~del.ar(1) + ~sig.ar(1), 250, 9);  // Gverb expects a monophonic input and output stereo. and sig is outputting a stereo signal so what we need to say sig.ar and then the number of channels. Pass delay first, then signal
 	sig = LPF.ar(sig, 1000);
 	sig = sig * 0.5;
 };
@@ -262,7 +269,7 @@ p.clear;
 ~del.play.fadeTime_(3);
 ~del = {
 	var sig;
-	sig = CombL.ar(~sig.ar(2), 1, 0.3, 8);
+	sig = CombL.ar(~sig.ar(2), 1, 0.3, 8); // 2 channels
 	sig = sig * 0.5;
 };
 )
@@ -279,6 +286,15 @@ p.clear;
 };
 )
 
+(
+~del.play.fadeTime_(3);
+~del = {
+	var sig;
+	sig = CombL.ar(~sig.ar(2), 1, ~lfo.kr(1).lag(3), 8);
+	sig = sig * 0.5;
+};
+)
+
 //side note — you can set volume of proxy monitoring nodes via .vol_(number)
 ~sig.vol_(1.0);
 ~del.vol_(1.0);
@@ -291,18 +307,18 @@ p.clear(3);
 ~sig.play.fadeTime_(3);
 ~sig = {
 	var sig, detune = \detune.kr(1), bend;
-	bend = LFNoise2.kr(0.1!16).bipolar(detune).midiratio;
-	sig = Saw.ar(\freq.kr(200) * bend) * 0.1;
+	bend = LFNoise2.kr(0.1!16).bipolar(detune).midiratio;// 16 channels. ranging from positive to negative detune. converted to midi ratio .it is the value in semitones in either direction
+	sig = Saw.ar(\freq.kr(200) * bend) * 0.1;  //a frequency which is 200 multiplied by this frequency deviation signal scaled down all 16 channels spread over stereo,  Try LFTri, Saw, Pulse, Varsaw
 	sig = LPF.ar(sig, \cf.kr(2000));
 	sig = Splay.ar(sig);
 };
 )
 
 //instantaneous set
-~sig.set(\freq, 450, \detune, 4);
+~sig.set(\freq, 450, \detune, 4); // even if I change the Ugen in ~sig, the freq will stay with set
 
 //xfade new version with updated parameters
-~sig.xset(\freq, 28.midicps, \detune, 0.2);
+~sig.xset(\freq, 28.midicps, \detune, 9);
 
 (
 //with varlagged parameters
@@ -319,7 +335,11 @@ p.clear(3);
 //set will interpolate with lag time
 ~sig.set(\freq, 50, \detune, 0.5);
 
-//xset will ignore lag time
+//xset will ignore lag time, crassfade the lagtime
 ~sig.xset(\freq, 150, \detune, 2);
+~sig.xset(\freq, 28.midicps, \detune, 2);
 
 ~sig.clear(6);
+
+
+//check more example in Reference: NodeProxy
