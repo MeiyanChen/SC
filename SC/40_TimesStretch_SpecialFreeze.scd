@@ -1,25 +1,29 @@
 //In many situations, duration and musical pitch are inseparably linked.If we reduce playback speed to two-thirds,  the duration of the sample increases,   but pitch is also affected. This happens because  pitch is a perceptual experience based primarily on frequency, and frequency is just a measure of  vibrational cycles per second.
 
-//So, if we stretch the sample, cycles get longer, and therefore frequency and our sense of pitch decrease. But, we can unlink these two parameters  using the Fast Fourier Transform, or FFT,   to perform a spectral analysis and resynthesis of  a sound, allowing us to do phase vocoder things  like pitch-neutral, time-stretching and spectral freezing.
+//So, if we stretch the sample, cycles get longer, and therefore frequency and our sense of pitch decrease. But, we can unlink these two parameters  using the Fast Fourier Transform, or FFT,   to perform a spectral analysis and resynthesis of  a sound, allowing us to do phase vocoder相位声码器 things  like pitch-neutral, time-stretching and spectral freezing.
 
 //Specifically, we'll use PV_PlayBuf and   PV_RecordBuf, these are two UGens that are  part of the SC3-plugins extension package,   which does need to be downloaded and installed  separately.
 
 //These UGens behave a lot like  regular RecordBuf and PlayBuf, but the buffer they use contains FFT analysis data instead of data that directly represents the waveform.
 
+s.options.sampleRate = 48000;
+
+Platform.userExtensionDir;
+Platform.systemExtensionDir;
 
 s.boot;
 
-b = Buffer.read(s, );
+b = Buffer.read(s, "/Users/meiyanchen/Documents/Projects/told_hold/Bounces/Polished Concrete.aif");
 
 {PlayBuf.ar(2, b, rate:2/3)}.play;
 
 
-//The FFT size is the number of samples in one analysis window, it has to be  a power of two. For time-stretching applications,  a relatively high value like 8192 usually  works well, but you can drop down to 4096   or 2048 and it'll probably still sound
+//The FFT size is the number of samples in one analysis window, it has to be a power of two. For time-stretching applications,  a relatively high value like 8192 usually  works well, but you can drop down to 4096 or 2048
 //the hop size, means analysis windows overlap by a factor  of four which helps produce a smooth resynthesis.
-//for the windowing envelope, 0 is a  sine window, 1 is a Hann window, slightly different but both reasonable choice.
+//for the windowing envelope, 0 is a sine window, 1 is a Hann window, slightly different but both reasonable choice.
 
 (
-~fftsize = 8182;
+~fftsize = 8192;
 ~hop = 0.25;  //中继段
 ~win = 0;
 )
@@ -45,18 +49,20 @@ b.numChannels;
 }.play;
 )
 
+//分析过程不会马上完成，观察node tree等完成时间
 
 //If we plot f, we can see there's data, and  it does not directly represent the waveform, but instead indirectly represents  it as spectral analysis data.
 
 f.do(_.plot(minval:0, maxval:100));
 
 
-//In our second function, another pair of LocalBufs for FFT calculation, PV_PlayBuf reads the data from f, we include a rate argument for real-time  control, and IFFT is the inverse operation that  resynthesizes a waveform from the data, producing  a signal we can actually send to our speakers.
+//In our second function, another pair of LocalBufs for FFT calculation, PV_PlayBuf reads the data from f, we include a rate argument for real-time  control, and IFFT is the inverse operation that resynthesizes a waveform from the data, producing a signal we can actually send to our speakers.
 
 (
 x = {
 	var sig, chain, localbuf;
-	localbuf = {LocalBuf, f, \rate.kr(1), loop:1};
+	localbuf = {LocalBuf.new(~fftsize)}!2;
+	chain = PV_RecordBuf(localbuf, f, \rate.kr(1), loop: 1);
 	sig = IFFT(chain, ~win);
 }.play;
 )
