@@ -2,7 +2,7 @@
 s.scope;
 FreqScope.new;
 
-/*FM synthesis creates additional frequency components in the output spectrum called sidebands that appear in pair on the either side of the carrier frequency,
+/*FM synthesis creates additional frequency components in the output spectrum called sidebands 边频带 that appear in pair on the either side of the carrier frequency,
 where these sidebands appear depends on the frequency of the modulator and the number of sidebands that are present depends on a factor called index of modulation
 which is directly proportional to the amplitude of modulator
 

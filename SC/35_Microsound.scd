@@ -1,9 +1,13 @@
+s.options.sampleRate = 48000;
+
 // Dennis Gabor, Iannis Xenakis
 // Microdsound (Roads, 2001a)
 // Particle-based synthesis
 
 // Gaussian distribution function 高斯函数
 
+SinOsc
+LFTri
 
 // micro time scale  eg. 100ms
 
@@ -11,7 +15,7 @@
 
 
 //Perception at the Micro Time scale
-// puses repeating at less than about 16Hz will appear to most listeners as individual pulses, while pulses at 30 Hz fuse into continuous tones.
+// pulses repeating at less than about 16Hz will appear to most listeners as individual pulses, while pulses at 30 Hz fuse into continuous tones.
 
 { Impulse.ar(XLine.kr(12,48,6,doneAction:2))*0.1!2 }.play;// up
 { Impulse.ar(XLine.kr(48,12,6,doneAction:2))*0.1!2 }.play;// down
