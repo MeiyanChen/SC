@@ -10,6 +10,7 @@ s.options.sampleRate = 48000;
 
 Platform.userExtensionDir;
 Platform.systemExtensionDir;
+File.mkdir(Platform.userExtensionDir);
 
 s.boot;
 
