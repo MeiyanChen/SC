@@ -89,7 +89,7 @@ SynthDef(\d, {
 	var freq, sig, trig, deg;
 	deg = Duty.ar(
 		1/4,    //  Drand([1/4. 1/8], inf)   //but the duration doesn't have to be static, Duty Pattern in fact it can be any signal, like an LFO or even another demand-style pattern, like Drand.
-		0,   // Impulse.ar(8/11)   //The reset argument can be used to restart a sequence at any point. So, for example, if the duration is 1/8 and we want a repeating sequence of 11 notes, we can use an impulse generator with a frequency of 8/11 because frequency and period are inversely related.
+		0,
 		Dseq([0, 2, -1, -3], inf)
 	);
 	freq = (DegreeToKey.ar(b, deg) + 50).midicps;
@@ -108,7 +108,7 @@ SynthDef(\d, {
 	var freq, sig, trig, deg;
 	deg = Duty.ar(
 		1/8,
-		Impulse.ar(8/11),
+		Impulse.ar(8/11),  //The reset argument can be used to restart a sequence at any point. So, for example, if the duration is 1/8 and we want a repeating sequence of 11 notes, we can use an impulse generator with a frequency of 8/11 because frequency and period are inversely related.
 		Dseq([0, 2, -1, -3], inf)
 	);
 	freq = (DegreeToKey.ar(b, deg) + 50).midicps;
