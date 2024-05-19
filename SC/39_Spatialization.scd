@@ -1,3 +1,9 @@
+s.options.sampleRate = 44100;
+s.boot;
+
+
+
+
 (
 //basic setup
 s = Server.local.boot;
@@ -148,37 +154,47 @@ x.free;
 // free buffer:
 b. free;
 
+//https://zh.wikipedia.org/zh-cn/%E5%8D%B7%E7%A7%AF-------------------------------------------------
+
 
 //The Convolution UGens and their arguments.
 
 // convolving two signals with each other:
-Convolution.ar( in, kernel, framesize, mul, add )
+Convolution.ar( in, kernel, framesize, mul, add ) // kernel 核函数
+
 // convolving one signal with a buffer:
 Convolution2.ar( in, kernel, trigger, framesize, mul, add )
+
 // as above with linear interpolation:
-Convolution2L.ar(in, kernel, trigger, framesize, crossfade, mul, add
-)
+Convolution2L.ar(in, kernel, trigger, framesize, crossfade, mul, add)
+
 // as above, with two buffers:
-StereoConvolution2L.ar( in, kernelL, kernel, trigger, framesize,
-crossfade, mul, add )
+StereoConvolution2L.ar( in, kernelL, kernel, trigger, framesize, crossfade, mul, add)
+
 // time based convolution (highly inefficient for audio rate)
 Convolution3.ar(in, kernel, trigger, framesize, mul, add )
 Convolution3.kr(in, kernel, trigger, framesize, mul, add )
+
 // partitioned convolution
 PartConv.ar(in, fftsize, irbufnum, mul, add)
 
 
 
-//The Reverb UGens with their input arguments.
+
+//The Reverb UGens with their input arguments.-------------------------------
 
 // one channel input:
 FreeVerb.ar (in, mix, room, damp, mul, add)
+
 // 2 channel input and output:
 FreeVerb2.ar(in, in2, mix, room, damp, mul, add)
-// stereo reverb
-#left, right = GVerb.ar(in, roomsize, revtime, damping, inputbw,
-spread, drylevel, earlyreflevel, taillevel, maxroomsize, mul, add)
 
+// stereo reverb
+#left, right = GVerb.ar(in, roomsize, revtime, damping, inputbw, spread, drylevel, earlyreflevel, taillevel, maxroomsize, mul, add)
+
+
+//HRTF--------------------------------------
+//https://audioprogramming101.wordpress.com/2014/03/04/create-binaural-soundscapes-using-supercollider-and-hrtfs/
 
 (
 
@@ -190,7 +206,7 @@ amp)
 }).add;
 )
 
-× = Synth.new(\binauralconvolver, [\bufL,~HRTF.at(~sourceazi).at(~sourcelev)[0], \bufR, ~HRTF.at(~sourceazi).at(~sourcelev)[1]]);
+x = Synth.new(\binauralconvolver, [\bufL, ~HRTF.at(~sourceazi).at(~sourcelev)[0], \bufR, ~HRTF.at(~sourceazi).at(~sourcelev)[1]]);
 
 ~headtracker.action_({|azim,elev| x.setn(\bufL, ~HRTF.at(~source.azimuth - azim ).at(~source.elevation - elev ));});
 
@@ -218,23 +234,102 @@ b = a.loadToBuffer; // send speaker config to the server
 // pan around the circle up and down
 x = {|azi = 0, ele = 0, spr = 10|
 var source;
-source = PinkNoise.ar (0.2);
-VBAP.ar (16, source, b, LFSaw.kr(0.5, 0). range (-180, 180) * -1,
-SinOsc.kr(3, 0) .range(0, 14.97), spr);
+source = PinkNoise.ar(0.2);
+VBAP.ar(16, source, b, LFSaw.kr(0.5, 0).range (-180, 180) * -1, SinOsc.kr(3, 0).range(0, 14.97), spr);
 }.play;
 )
 
 
 
+// 3D encoding:
+PanB.ar(in, azimuth, elevation, gain)
+//2D encoding:
+PanB2.kr(in, azimuth, gain)
+// 2D encoding of a stereo signal:
+BiPanB2.kr(inA, inB, azimuth, gain)
+// decoding (2D):
+DecodeB2.kr(numChans, w, x, y, orientation)
+
+// rotating (in the horizontal plane):
+Rotate2.kr(x, y, pos)
+
+// From AmbisonicUGens in sc3-plugins:
+
+//encoding (3D):
+BFEncode1.ar(in, azimuth, elevation, rho, gain, wComp)
+BFEncode2.ar(in, point_x, point_y, elevation, gain, wComp)
+
+// encoding of a stereo signal (3D)
+BFEncodeSter.ar(l, r, azimuth, width, elevation, rho, gain, wComp)
+// decoding (3D):
+BFDecode1.ar(w, x, y, z, azimuth, elevation, wComp, mul, add)
+
+// manipulating (3D):
+BFManipulate.ar(w, x, y, z, rotate, tilt, tumble)
+// rotate is rotation around the z-axis, tilt around the x-axis, and tumble around the y-axis
+
+{Array.fill(2, WhiteNoise.ar(0.1))}.play; // sounds like it comes from the center
+{Array.fill(2, {WhiteNoise.ar(0.1)})}.play; // sounds wide
+
+{LPF.ar(Array.fill(2, WhiteNoise.ar(0.8)), 300, 0.2)}.play;
+{LPF.ar(Array.fill(2, {WhiteNoise.ar(0.8)}), 300, 0.2)}.play;
 
 
 
 
 
+(
+b = Buffer.alloc(s,2048,1);
+c = Platform.resourceDir +/+ "sounds/a11wlk01.wav";
+d = Buffer.alloc(s,2048,1);
+)
+
+(
+//make stereo from mono
+// MouseX controls decorrelation
+x = SynthDef("PV_DecorrelateStereo", { arg out=0, bufnum=0, bufnum2, soundBufnum=2;
+ var in, chain, chain2;
+ in = PlayBuf.ar(1, soundBufnum, BufRateScale.kr(soundBufnum), loop: 1);
+ chain = FFT(bufnum, in);
+ chain2 = PV_Copy(chain, bufnum2);
+ chain = PV_Decorrelate([chain, chain2], 1,  MouseX.kr);
+ Out.ar(out, 0.5 * IFFT(chain));
+}).play(s,[\out, 0, \bufnum, b, \bufnum2, d, \soundBufnum, c]);
+)
+
+x.free; [b, c, d].do(_.free);
 
 
 
+b = Buffer.read(s, "soundsla11wlk01.wav");
+(
+SynthDef("grain",{
+arg i_out=0, i_sampbufnum, dur = 0.05, pointer, offset= 0.005, amp= 1.0, loop= 1;
+var thisStart, thisDur, grain;
+thisStart =pointer+ IRand(0, offset); // adds random time offset
+grain= EnvGen.ar(Env.sine, 1.0, amp, 0.0, dur, 2) * PlayBuf.ar(1,i_sampbufnum, BufRateScale.ir(i_sampbufnum), 1, thisStart,loop);
+OffsetOut.ar(i_out,grain); // use OffsetOut for precise sub-block timing
+}).add;
+)
 
+(
+X = {
+var numGrains = 32; //approximate number of simultaneous grains
+var numChannels = 2; // adjust for your setup
+var dur = 0.05, durRand = 0.05, thisDur; var start, now;
+var numGrainsRecip;
+numGrainsRecip = numGrains.reciprocal; // save some divides by converting to reciprocal
+start= Main.elapsedTime;
+loop({
+		now= Main.elapsedTime - start;
+		thisDur = dur + durRand.rand;
+        s.bind({Synth("grain", [i_out: numChannels.rand, i_sampbufnum: b, dur: thisDur, pointer: now* b.sampleRate, amp: numGrainsRecip]);
+}); // send as a bundle for precise sub-block timing
+(thisDur * numGrainsRecip).wait;
+})
+}.fork;
+)
 
-
+x.stop;
+b.free;
 
